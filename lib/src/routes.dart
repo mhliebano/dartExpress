@@ -8,6 +8,7 @@ class Route {
 
 abstract class RoutesList {
   static Map<String, List<Route>> routes = {"GET": [], "POST": []};
+
   static void useGET(Route r) {
     routes["GET"]?.add(r);
   }
