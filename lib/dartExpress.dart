@@ -6,4 +6,3 @@
 export 'src/request.dart';
 export 'src/core.dart';
 export 'src/routes.dart';
-export 'src/securitytoken.dart';
