@@ -11,7 +11,7 @@ void main(List<String> args) {
   //enable securty tokens
   server.useSecurityToken(phraseSecret: "phraseSecret!");
 
-  //List enpdoints
+  //List endpoints
   server.useList(Test.getRoute());
 
   //Simple endpoint GET return html
