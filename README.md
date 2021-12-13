@@ -1,6 +1,6 @@
 # DARTEXPRESS
 
-DartExpress is a simple api server inpired in package express to NodeJS
+DartExpress is a simple api server inspired in package express to NodeJS
 
 ## Class
 
@@ -12,7 +12,7 @@ None
 
 ***Methods***
 
-* void run({String ip, int port}) => run server
+* void run({String ip, int port, ConfigSecure useSecure: [false]}) => run server
 
 * void useSecurityToken({required String phraseSecret, Duration? timeLive}) => enable security tokens
 
