@@ -30,9 +30,7 @@ class DartExpress {
       if (useSecure == null) {
         server = await HttpServer.bind(ip, port);
       } else {
-        //Platform.script.resolve('certificates/server_chain.pem').toFilePath();
         String chain = useSecure.pathToChain;
-        //Platform.script.resolve('certificates/server_key.pem').toFilePath();
         String key = useSecure.pathToKey;
         SecurityContext context = SecurityContext()
           ..useCertificateChain(chain)
@@ -56,8 +54,8 @@ class DartExpress {
               await _parseBody(type: type, e: e, contentType: ct)
                   .then((value) => bd = value);
             }).asFuture();
-            print("ready");
-            print(bd);
+            // print("ready");
+            // print(bd);
           }
           reqs.parametersRequest(
               body: bd.isEmpty ? <String, dynamic>{} : bd[0],
@@ -65,6 +63,7 @@ class DartExpress {
               route: rs.parametersRoute);
           await rs.function(reqs, resp);
         } else {
+          resp.headers.contentType = ContentType.json;
           resp.statusCode = HttpStatus.notFound;
           resp.write('{"status":404, "response":"Not found"}');
         }
