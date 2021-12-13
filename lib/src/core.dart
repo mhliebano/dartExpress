@@ -15,14 +15,30 @@ class DartExpress {
   String _phrase = "";
   Duration? _tokenLive;
 
-  void run({String ip: "127.0.0.1", int port: 9090}) {
+  void run({
+    String ip: "127.0.0.1",
+    int port: 9090,
+    ConfigSecure? useSecure: null,
+  }) {
     if (!Directory("./tmp").existsSync()) {
       Directory("./tmp/files").createSync(recursive: true);
       Directory("./tmp/tokens").createSync(recursive: true);
     }
     runZonedGuarded(() async {
       print("Server run at $ip:$port");
-      HttpServer server = await HttpServer.bind(ip, port);
+      HttpServer server;
+      if (useSecure == null) {
+        server = await HttpServer.bind(ip, port);
+      } else {
+        //Platform.script.resolve('certificates/server_chain.pem').toFilePath();
+        String chain = useSecure.pathToChain;
+        //Platform.script.resolve('certificates/server_key.pem').toFilePath();
+        String key = useSecure.pathToKey;
+        SecurityContext context = SecurityContext()
+          ..useCertificateChain(chain)
+          ..usePrivateKey(key, password: useSecure.password);
+        server = await HttpServer.bindSecure(ip, port, context);
+      }
       server.listen((HttpRequest req) async {
         RoutesServer? rs = _getRoute(req.method, req.uri);
         HttpResponse resp = req.response;
@@ -248,6 +264,28 @@ class DartExpress {
     File("./tmp/tokens/${t.token}").writeAsStringSync(
         "${t.init.millisecondsSinceEpoch.toString()};${t.exprire.millisecondsSinceEpoch.toString()}");
     return t.token;
+  }
+}
+
+class ConfigSecure {
+  String? _pathToChain;
+  String? _pathToKey;
+  String? _password;
+  String get pathToChain => _pathToChain!;
+  String get pathToKey => _pathToKey!;
+  String get password => _password!;
+
+  ConfigSecure(
+      {required String pathToChain,
+      required String pathToKey,
+      required String password}) {
+    _pathToChain = pathToChain;
+    _pathToKey = pathToKey;
+    _password = password;
+  }
+
+  factory ConfigSecure.none() {
+    return ConfigSecure(pathToChain: "", pathToKey: "", password: "");
   }
 }
 
