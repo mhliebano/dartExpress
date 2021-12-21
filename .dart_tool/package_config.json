@@ -23,10 +23,10 @@
       "name": "dart_express",
       "rootUri": "../",
       "packageUri": "lib/",
-      "languageVersion": "2.12"
+      "languageVersion": "2.15"
     }
   ],
-  "generated": "2021-12-13T23:29:16.499665Z",
+  "generated": "2021-12-20T23:40:40.620845Z",
   "generator": "pub",
-  "generatorVersion": "2.13.4"
+  "generatorVersion": "2.15.0"
 }

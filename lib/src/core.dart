@@ -16,8 +16,9 @@ class DartExpress {
   Duration? _tokenLive;
 
   void run({
-    String ip: "127.0.0.1",
+    String? ip,
     int port: 9090,
+    String? vhost,
     ConfigSecure? useSecure: null,
   }) {
     if (!Directory("./tmp").existsSync()) {
@@ -25,22 +26,44 @@ class DartExpress {
       Directory("./tmp/tokens").createSync(recursive: true);
     }
     runZonedGuarded(() async {
-      print("Server run at $ip:$port");
+      print(
+          "Server run at ${ip == null ? "*" : ip}:$port ${vhost == null ? "" : "(with $vhost)"}");
       HttpServer server;
       if (useSecure == null) {
-        server = await HttpServer.bind(ip, port);
+        server = await HttpServer.bind(
+            ip == null ? InternetAddress.anyIPv4 : ip, port);
       } else {
         String chain = useSecure.pathToChain;
         String key = useSecure.pathToKey;
         SecurityContext context = SecurityContext()
           ..useCertificateChain(chain)
           ..usePrivateKey(key, password: useSecure.password);
-        server = await HttpServer.bindSecure(ip, port, context);
+        server = await HttpServer.bindSecure(
+            ip == null ? InternetAddress.anyIPv4 : ip, port, context);
       }
       server.listen((HttpRequest req) async {
         RoutesServer? rs = _getRoute(req.method, req.uri);
         HttpResponse resp = req.response;
         Request reqs = Request.fromHttpRequest(req: req);
+        print(
+            "Request entrante ${req.requestedUri.hasAuthority}, ${req.requestedUri.authority}, ${req.requestedUri.host}");
+        if (req.requestedUri.hasAuthority) {
+          if (vhost != null) {
+            if (req.requestedUri.host != vhost) {
+              resp.headers.contentType = ContentType.json;
+              resp.statusCode = HttpStatus.notFound;
+              resp.write('{"status":404, "response":"Not found"}');
+              resp.close();
+              return;
+            }
+          }
+        } else {
+          resp.headers.contentType = ContentType.json;
+          resp.statusCode = HttpStatus.notFound;
+          resp.write('{"status":404, "response":"Not found"}');
+          resp.close();
+          return;
+        }
         List bd = [];
         if (rs != null) {
           rs.security

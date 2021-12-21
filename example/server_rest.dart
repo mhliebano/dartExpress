@@ -20,7 +20,7 @@ void main(List<String> args) {
       function: (Request req, HttpResponse response) {
         response.statusCode = HttpStatus.ok;
         response.headers.contentType = ContentType.html;
-        response.writeAll(["<h1>", "Respuesta", "</h2>"]);
+        response.writeAll(["<h1>", "Respuesta", "</h1>"]);
       });
 
   //Simple endpoint GET return html file
@@ -68,5 +68,10 @@ void main(List<String> args) {
         }
       });
   //Default run server 127.0.0.1:9090
-  server.run();
+  server.run(
+      vhost: "satus.mmsystems.xyz",
+      useSecure: ConfigSecure(
+          pathToChain: "/etc/letsencrypt/archive/mmsystems.xyz/fullchain1.pem",
+          pathToKey: "/etc/letsencrypt/archive/mmsystems.xyz/privkey1.pem",
+          password: ""));
 }
