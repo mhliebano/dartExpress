@@ -26,8 +26,8 @@ class DartExpress {
       Directory("./tmp/tokens").createSync(recursive: true);
     }
     runZonedGuarded(() async {
-      print(
-          "Server run at ${ip == null ? "*" : ip}:$port ${vhost == null ? "" : "(with $vhost)"}");
+      // print(
+      //     "Server run at ${ip == null ? "*" : ip}:$port ${vhost == null ? "" : "(with $vhost)"}");
       HttpServer server;
       if (useSecure == null) {
         server = await HttpServer.bind(
@@ -45,8 +45,8 @@ class DartExpress {
         RoutesServer? rs = _getRoute(req.method, req.uri);
         HttpResponse resp = req.response;
         Request reqs = Request.fromHttpRequest(req: req);
-        print(
-            "Request entrante ${req.requestedUri.hasAuthority}, ${req.requestedUri.authority}, ${req.requestedUri.host}");
+        // print(
+        //     "Request entrante ${req.requestedUri.hasAuthority}, ${req.requestedUri.authority}, ${req.requestedUri.host}");
         if (req.requestedUri.hasAuthority) {
           if (vhost != null) {
             if (req.requestedUri.host != vhost) {
