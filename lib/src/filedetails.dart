@@ -29,4 +29,8 @@ class FileDetails {
     await File('./tmp/files/$tmpName').rename('./$movepath');
     return true;
   }
+
+  void string() {
+    print(fileName);
+  }
 }

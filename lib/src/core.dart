@@ -1,291 +1,276 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
-import 'filedetails.dart';
-import 'request.dart';
-import 'routes.dart';
-import 'securitytoken.dart';
+import 'package:dart_express/dartExpress.dart';
+import 'package:dart_express/src/cors.dart';
+import 'package:dart_express/src/routerList.dart';
 
-import 'routeserver.dart';
+import 'filedetails.dart';
 
 class DartExpress {
-  Map<String, List<RoutesServer>> _routes = {"POST": [], "GET": []};
-  bool _security = false;
-  String _phrase = "";
-  Duration? _tokenLive;
+  String _securityPhrase = "";
+  Duration? _securityTokenDuration = Duration(minutes: 10);
 
-  void run({
-    String? ip,
-    int port: 9090,
-    String? vhost,
-    ConfigSecure? useSecure: null,
-  }) {
+  ConfigServer? _conf;
+  Cors? _cors;
+  bool _useCors = false;
+  bool _useStatic = false;
+  bool _useSecurity = false;
+
+  DartExpress({required ConfigServer conf}) {
+    _conf = conf;
+  }
+
+  void run() {
     if (!Directory("./tmp").existsSync()) {
       Directory("./tmp/files").createSync(recursive: true);
       Directory("./tmp/tokens").createSync(recursive: true);
     }
     runZonedGuarded(() async {
-      // print(
-      //     "Server run at ${ip == null ? "*" : ip}:$port ${vhost == null ? "" : "(with $vhost)"}");
+      print("Server run at ${_conf!.ip == null ? "*" : _conf!.ip}:${_conf!.port}");
       HttpServer server;
-      if (useSecure == null) {
-        server = await HttpServer.bind(
-            ip == null ? InternetAddress.anyIPv4 : ip, port);
-      } else {
-        String chain = useSecure.pathToChain;
-        String key = useSecure.pathToKey;
-        SecurityContext context = SecurityContext()
-          ..useCertificateChain(chain)
-          ..usePrivateKey(key, password: useSecure.password);
-        server = await HttpServer.bindSecure(
-            ip == null ? InternetAddress.anyIPv4 : ip, port, context);
-      }
-      server.listen((HttpRequest req) async {
-        RoutesServer? rs = _getRoute(req.method, req.uri);
-        HttpResponse resp = req.response;
-        Request reqs = Request.fromHttpRequest(req: req);
-        // print(
-        //     "Request entrante ${req.requestedUri.hasAuthority}, ${req.requestedUri.authority}, ${req.requestedUri.host}");
-        if (req.requestedUri.hasAuthority) {
-          if (vhost != null) {
-            if (req.requestedUri.host != vhost) {
-              resp.headers.contentType = ContentType.json;
-              resp.statusCode = HttpStatus.notFound;
-              resp.write('{"status":404, "response":"Not found"}');
-              resp.close();
-              return;
+      server = await HttpServer.bind(_conf!.ip == null ? InternetAddress.anyIPv4 : _conf!.ip, _conf!.port);
+      server.listen((request) async {
+        if (_useCors) {
+          if (request.method == 'OPTIONS') {
+            _cors!.responseCORS(request.response);
+            return;
+          }
+          request.response.headers.set("Access-Control-Allow-Origin", "*");
+        }
+        RouteInternal? handleroute = _getRoute(request.method, request.uri);
+        IncomingRequest reqs = IncomingRequest.fromHttpRequest(req: request);
+        if (handleroute.isStatic) {
+          if (handleroute.is404) {
+            request.response.headers.contentType = ContentType.html;
+            request.response.statusCode = HttpStatus.notFound;
+            request.response.write(
+                '<html><head></head><body><h2>404 Not Found</h2><h3>The page ${handleroute.path} no found in this server</h3></body></html>');
+            request.response.close();
+          } else {
+            if (request.contentLength > 0) {
+              await request.listen((e) async {
+                await _parseBody(e: e, contentType: request.headers.contentType!).then((value) {
+                  reqs.body = value;
+                });
+              }, onDone: () => print("ok")).asFuture();
             }
+            request.response.headers.set(HttpHeaders.contentTypeHeader, handleroute.regex);
+            request.response.statusCode = HttpStatus.ok;
+            File file = File("./www${handleroute.path}");
+            file.openRead().pipe(reqs.response).catchError((e) {}).whenComplete(() => reqs.response.close());
           }
         } else {
-          resp.headers.contentType = ContentType.json;
-          resp.statusCode = HttpStatus.notFound;
-          resp.write('{"status":404, "response":"Not found"}');
-          resp.close();
-          return;
-        }
-        List bd = [];
-        if (rs != null) {
-          rs.security
-              ? reqs.securityStatus =
-                  _checkSecurity(req.headers["authorization"])
-              : null;
-          if (req.contentLength > 0) {
-            String type = req.headers.contentType!.mimeType;
-            String ct = req.headers.contentType.toString();
-            await req.listen((e) async {
-              await _parseBody(type: type, e: e, contentType: ct)
-                  .then((value) => bd = value);
-            }).asFuture();
-            // print("ready");
-            // print(bd);
-          }
-          reqs.parametersRequest(
-              body: bd.isEmpty ? <String, dynamic>{} : bd[0],
-              files: bd.isEmpty ? <FileDetails>[] : bd[1],
-              route: rs.parametersRoute);
-          await rs.function(reqs, resp);
-        } else {
-          resp.headers.contentType = ContentType.json;
-          resp.statusCode = HttpStatus.notFound;
-          resp.write('{"status":404, "response":"Not found"}');
-        }
+          if (handleroute.is404) {
+            request.response.headers.contentType = ContentType.json;
+            request.response.statusCode = HttpStatus.notFound;
+            request.response.write('{"status":404, "response":"Not found"}');
+            request.response.close();
+          } else {
+            if (request.contentLength > 0) {
+              await request.listen((e) async {
+                await _parseBody(e: e, contentType: request.headers.contentType!).then((value) {
+                  reqs.body = value;
+                });
+              }, onDone: () => print("ok")).asFuture();
+            }
+            if (handleroute.segmentsData.isNotEmpty) {
+              reqs.segmentsData = handleroute.segmentsData;
+            }
+            if (handleroute.useSecurity && _useSecurity) {
+              String? auth = request.headers["authorization"] == null ? null : request.headers["authorization"]!.first;
+              securityTokenStatus status = _checkToken(auth);
+              if (status != securityTokenStatus.STATUS_OK) {
+                request.response.headers.contentType = ContentType.json;
+                request.response.statusCode = HttpStatus.forbidden;
+                request.response.write('{"status":403, "response":$status}');
+                request.response.close();
+                return;
+              }
+            }
 
-        resp.close();
+            handleroute.callback(reqs);
+          }
+        }
+      }, onDone: () {
+        print("Listo cerrando el stream");
+      }, onError: (e, s) {
+        print("Salto un error");
       });
-    }, (e, s) => print("$e $s"));
+    }, (error, stack) => print("$error, $stack"));
   }
 
-  securityTokenStatus _checkSecurity(tokenclient) {
-    if (_security) {
-      if (tokenclient != null) {
-        //_dsWT
-        //print(tokenclient);
-        if (tokenclient.first.startsWith("_dsWT")) {
-          File tmpT = File("./tmp/tokens/${tokenclient.first}");
-          if (tmpT.existsSync()) {
-            String datatoken = tmpT.readAsStringSync();
-            if (DateTime.now().millisecondsSinceEpoch >
-                int.parse(datatoken.split(";")[1])) {
-              tmpT.deleteSync();
-              return securityTokenStatus.TOKEN_EXPIRED;
+  void route(Route route) {
+    try {
+      RoutesList.registerRoute(route);
+    } catch (e) {
+      print(e);
+      throw (e);
+    }
+  }
+
+  void useCors(bool use, {options}) {
+    _useCors = use;
+    if (use) {
+      _cors = Cors();
+    }
+  }
+
+  void useStatic(bool use, {options}) {
+    _useStatic = use;
+  }
+
+  void useSecurity(bool use, {String? secretFrase}) {
+    const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+    Random _rnd = Random();
+
+    _useSecurity = use;
+    if (secretFrase == null) {
+      _securityPhrase =
+          String.fromCharCodes(Iterable.generate(15, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+    } else {
+      _securityPhrase = secretFrase;
+    }
+  }
+
+  RouteInternal _getRoute(String method, Uri uri) {
+    print("llego por $method al path ${uri.path}");
+    return RoutesList.isRouterRegister(method, uri.path, _useStatic);
+  }
+
+  Future<Map<String, dynamic>> _parseBody({required Uint8List e, required ContentType contentType}) async {
+    Map<String, dynamic> body = {};
+    switch (contentType.mimeType) {
+      case "application/x-www-form-urlencoded":
+        String content = utf8.decode(e);
+        List<String> params = content.split("&");
+        params.forEach((element) {
+          List key_val = element.split("=");
+          body[key_val.first] = key_val.last;
+        });
+        break;
+      case "application/json":
+        body = json.decode(utf8.decode(e));
+        break;
+      case "multipart/form-data":
+        String? boundary = contentType.parameters["boundary"];
+        String rq = String.fromCharCodes(e);
+        List<RegExpMatch> fields = RegExp("(--$boundary)", dotAll: true, multiLine: true).allMatches(rq).toList();
+        for (var i = 0; i < fields.length - 1; i++) {
+          int star = 0;
+          int end = 0;
+          if (i == 0) {
+            star = fields[0].end + 1;
+            end = fields[1].start - 1;
+          } else {
+            star = fields[i].end + 1;
+            end = fields[i + 1].start - 1;
+          }
+          String x = rq.substring(star, end).trim();
+          RegExpMatch? dis =
+              RegExp("^Content-Disposition: form-data.+?\n", dotAll: true, multiLine: true).firstMatch(x);
+          if (dis != null) {
+            String disposition = x.substring(dis.start, dis.end).trim();
+            RegExpMatch? field = RegExp(r'name="(\w.+?)"', dotAll: false, multiLine: false).firstMatch(disposition);
+            String fieldName = field!.group(1)!;
+
+            if (disposition.contains("filename")) {
+              RegExpMatch? fileName =
+                  RegExp(r'filename="(\w.+?)"', dotAll: false, multiLine: false).firstMatch(disposition);
+              RegExpMatch? detailsfile = RegExp(r"^(?:Content-Type:)(.+)", multiLine: true).firstMatch(x);
+              String? typefile = detailsfile?.group(0);
+              int len = x.substring(detailsfile!.end + 4, x.length).length;
+              String tmpname = "tmp${DateTime.now().millisecondsSinceEpoch}";
+              File tmp = File("./tmp/files/${tmpname}");
+              tmp.writeAsBytes(x.substring(detailsfile.end + 4, x.length).codeUnits);
+              body[fieldName] = FileDetails(
+                  fieldName: fieldName,
+                  fileName: fileName!.group(1)!,
+                  fileSize: len,
+                  fileType: typefile.toString(),
+                  tmpName: tmpname);
             } else {
-              return securityTokenStatus.STATUS_OK;
+              String data = x.substring((dis.end + 1), (x.length)).trim();
+              body[fieldName] = data;
+            }
+          }
+        }
+        break;
+    }
+
+    return body;
+  }
+
+  securityTokenStatus _checkToken(String? auth) {
+    securityTokenStatus st = securityTokenStatus.STATUS_OK;
+    if (auth != null) {
+      List<String> pieces = auth.split(" ");
+      if (pieces.length == 2) {
+        if (pieces[0] == "Bearer") {
+          List<String> fragToken = pieces[1].split(".");
+          if (fragToken.length == 3) {
+            final Base64Decoder base64decoder = base64.decoder;
+            String encodedHeader = fragToken[0];
+            String encodedFrase = fragToken[2];
+            String encodedPayload = fragToken[1];
+            int dif = 0;
+            if (encodedHeader.length % 4 != 0) {
+              dif = 4 - (encodedHeader.length % 4);
+              encodedHeader = encodedHeader.padRight(encodedHeader.length + dif, "=");
+            }
+            if (encodedFrase.length % 4 != 0) {
+              dif = 4 - (encodedFrase.length % 4);
+              encodedFrase = encodedFrase.padRight(encodedFrase.length + dif, "=");
+            }
+            String header = utf8.decode(base64decoder.convert(encodedHeader));
+            String secret = utf8.decode(base64decoder.convert(encodedFrase));
+            String payload = utf8.decode(base64decoder.convert(encodedPayload));
+            if (header.split(".")[0] != "DTS") {
+              st = securityTokenStatus.TOKEN_NOT_VALID;
+            } else {
+              int diference = DateTime.now()
+                  .difference(DateTime.fromMillisecondsSinceEpoch(int.parse(header.split(".")[1])))
+                  .inMinutes;
+              if (diference > _securityTokenDuration!.inMinutes) {
+                st = securityTokenStatus.TOKEN_EXPIRED;
+              } else {
+                if (secret != _securityPhrase) {
+                  st = securityTokenStatus.TOKEN_NOT_VALID;
+                }
+              }
             }
           } else {
-            return securityTokenStatus.TOKEN_NOT_EXIST;
+            st = securityTokenStatus.TOKEN_NOT_VALID;
           }
         } else {
-          return securityTokenStatus.TOKEN_NOT_VALID;
+          st = securityTokenStatus.TOKEN_NOT_VALID;
         }
       } else {
-        return securityTokenStatus.AUTHORIZATION_HEADER_REQUIRED;
+        st = securityTokenStatus.TOKEN_NOT_VALID;
       }
     } else {
-      throw ({"code": "009", "description": "security token is disabled"});
+      st = securityTokenStatus.TOKEN_NOT_VALID;
     }
+    return st;
   }
 
-  RoutesServer? _getRoute(String method, Uri uri) {
-    RoutesServer? rsr = null;
-    List<RoutesServer> rs = _routes[method]!
-        .where((element) => RegExp(element.regexp).hasMatch(uri.path))
-        .toList();
-    rs.forEach((element) {
-      if (uri.pathSegments.length - 1 == element.pathlen) {
-        rsr = element;
-        if (rsr!.parametersRouteList.isNotEmpty) {
-          rsr!.parametersRouteList.asMap().forEach((i, element) {
-            rsr!.parametersRoute[element] =
-                uri.pathSegments[i + (rsr!.basePathlen)];
-          });
-        }
-      }
-    });
-    return rsr;
-  }
+  String newSecurityToken({Map<String, dynamic>? payload}) {
+    final Base64Encoder base64Encoder = base64.encoder;
 
-  Future<List> _parseBody(
-      {required String type,
-      required Uint8List e,
-      required String contentType}) async {
-    Map<String, dynamic> bodyParams = {};
-    List<FileDetails> bodyParamsFile = [];
-    List<dynamic> result = [];
-    // {"body": {}, "files": []};
-    if (type.compareTo("application/x-www-form-urlencoded") == 0) {
-      String content = utf8.decode(e);
-      List<String> params = content.split("&");
-      params.forEach((element) {
-        List key_val = element.split("=");
-        bodyParams[key_val.first] = key_val.last;
-      });
-    } else if (type.compareTo("application/json") == 0) {
-      bodyParams = json.decode(utf8.decode(e));
-    } else if (type.compareTo("multipart/form-data") == 0) {
-      String rq = String.fromCharCodes(e);
-
-      String boundary =
-          RegExp(r"boundary=(.*)$").stringMatch(contentType)!.split("=")[1];
-      List<RegExpMatch> fields =
-          RegExp("--$boundary", dotAll: true, multiLine: true)
-              .allMatches(rq)
-              .toList();
-
-      for (int i = 0; i < fields.length - 1; i++) {
-        String block =
-            rq.substring(fields[i].end + 34, fields[i + 1].start - 1);
-        List<RegExpMatch> fieldsdata =
-            RegExp(r'(?:name=\")(.+?)(?:\")').allMatches(block).toList();
-
-        if (fieldsdata.length > 1) {
-          int l = fieldsdata[0].group(0)!.length - 1;
-          String fieldname =
-              fieldsdata[0].group(0)!.substring(6, l).trim().toString();
-          l = fieldsdata[1].group(0)!.length - 1;
-          String filename =
-              fieldsdata[1].group(0)!.substring(6, l).trim().toString();
-
-          RegExpMatch? detailsfile =
-              RegExp(r"^(?:Content-Type:)(.+)", multiLine: true)
-                  .firstMatch(block);
-
-          String? typefile = detailsfile?.group(0);
-          int len = block.substring(detailsfile!.end + 4, block.length).length;
-          String tmpname = "tmp${DateTime.now().millisecondsSinceEpoch}";
-          File tmp = File("./tmp/files/${tmpname}");
-          tmp.writeAsBytes(
-              block.substring(detailsfile.end + 4, block.length).codeUnits);
-
-          bodyParamsFile.add(FileDetails(
-              fieldName: fieldname,
-              fileName: filename,
-              fileSize: len,
-              fileType: typefile.toString(),
-              tmpName: tmpname));
-        } else {
-          int st = fields[i].end;
-          int sn = fields[i + 1].start;
-          int l = fieldsdata[0].group(0)!.length - 1;
-          bodyParams[fieldsdata[0]
-              .group(0)!
-              .substring(6, l)
-              .trim()
-              .toString()] = rq.substring(st + fieldsdata[0].end + 38, sn - 1);
-        }
-      }
-    }
-    //print(bodyParams);
-    result.add(bodyParams);
-    result.add(bodyParamsFile);
-    return result;
-  }
-
-  bool _verifyRoute(RoutesServer r, String method) {
-    bool rs = true;
-    _routes[method]!.forEach((element) {
-      if (element.routeBase.compareTo(r.routeBase) == 0 &&
-          element.parametersRouteList.length == r.parametersRouteList.length) {
-        rs = false;
-      }
-    });
-    return rs;
-  }
-
-  void useList(Map<String, List<Route>> list) {
-    list["GET"]?.forEach((element) {
-      useGet(
-          route: element.route,
-          function: element.function,
-          security: element.security);
-    });
-    list["POST"]?.forEach((element) {
-      usePost(
-          route: element.route,
-          function: element.function,
-          security: element.security);
-    });
-  }
-
-  void useGet(
-      {required String route, required Function function, security: false}) {
-    RoutesServer _r =
-        RoutesServer(function: function, route: route, security: security);
-    _verifyRoute(_r, "GET")
-        ? _routes["GET"]!.add(_r)
-        : throw ({"code": "004", "description": "route already defined"});
-  }
-
-  void usePost(
-      {required String route, required Function function, security: false}) {
-    RoutesServer _r =
-        RoutesServer(function: function, route: route, security: security);
-    _verifyRoute(_r, "POST")
-        ? _routes["POST"]!.add(_r)
-        : throw ({"code": "004", "description": "route already defined"});
-  }
-
-  void useSecurityToken({required String phraseSecret, Duration? timeLive}) {
-    _security = true;
-    _phrase = phraseSecret;
-    if (timeLive != null) {
-      _tokenLive = timeLive;
-    }
-  }
-
-  String newSecurityToken() {
-    if (!_security) {
-      throw ({"code": "008", "description": "Security Token is disabled"});
-    }
-    SecurityToken t;
-    if (_tokenLive != null) {
-      t = SecurityToken(secretKey: _phrase, expireTime: _tokenLive);
+    String header = 'DTS.${DateTime.now().millisecondsSinceEpoch}';
+    String encodedHeader = base64Encoder.convert(header.codeUnits).replaceAll("=", '');
+    Map<String, dynamic> pay;
+    if (payload == null) {
+      pay = {"payload": "no data"};
     } else {
-      t = SecurityToken(secretKey: _phrase);
+      pay = payload;
     }
-    File("./tmp/tokens/${t.token}").writeAsStringSync(
-        "${t.init.millisecondsSinceEpoch.toString()};${t.exprire.millisecondsSinceEpoch.toString()}");
-    return t.token;
+    final String encodedpayload = base64Encoder.convert(json.encode(pay).codeUnits).replaceAll("=", '');
+    String secret = _securityPhrase;
+    String encodedFrase = base64Encoder.convert(secret.codeUnits).replaceAll("=", '');
+    return "${encodedHeader}.${encodedpayload}.${encodedFrase}";
   }
 }
 
@@ -297,10 +282,7 @@ class ConfigSecure {
   String get pathToKey => _pathToKey!;
   String get password => _password!;
 
-  ConfigSecure(
-      {required String pathToChain,
-      required String pathToKey,
-      required String password}) {
+  ConfigSecure({required String pathToChain, required String pathToKey, required String password}) {
     _pathToChain = pathToChain;
     _pathToKey = pathToKey;
     _password = password;
@@ -310,14 +292,3 @@ class ConfigSecure {
     return ConfigSecure(pathToChain: "", pathToKey: "", password: "");
   }
 }
-
-//Cors
-//Access-Control-Allow-Origin: ¿qué origen está permitido?
-// Access-Control-Allow-Credentials: ¿también se aceptan solicitudes cuando el modo de credenciales es incluir (include)?
-// Access-Control-Allow-Headers: ¿qué cabeceras pueden utilizarse?
-// Access-Control-Allow-Methods: ¿qué métodos de petición HTTP están permitidos?
-// Access-Control-Expose-Headers: ¿qué cabeceras pueden mostrarse?
-// Access-Control-Max-Age: ¿cuándo pierde su validez la solicitud preflight?
-// Access-Control-Request-Headers: ¿qué header HTTP se indica en la solicitud preflight?
-// Access-Control-Request-Method: ¿qué método de petición HTTP se indica en la solicitud preflight?
-// Origin:
