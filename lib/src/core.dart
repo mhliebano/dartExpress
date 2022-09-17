@@ -18,6 +18,7 @@ class DartExpress {
   bool _useCors = false;
   bool _useStatic = false;
   bool _useSecurity = false;
+  bool _useHttps = false;
 
   DartExpress({required ConfigServer conf}) {
     _conf = conf;
@@ -26,12 +27,14 @@ class DartExpress {
   void run() {
     if (!Directory("./tmp").existsSync()) {
       Directory("./tmp/files").createSync(recursive: true);
-      Directory("./tmp/tokens").createSync(recursive: true);
     }
     runZonedGuarded(() async {
       print("Server run at ${_conf!.ip == null ? "*" : _conf!.ip}:${_conf!.port}");
-      HttpServer server;
-      server = await HttpServer.bind(_conf!.ip == null ? InternetAddress.anyIPv4 : _conf!.ip, _conf!.port);
+      late HttpServer server;
+      if (_useHttps) {
+      } else {
+        server = await HttpServer.bind(_conf!.ip == null ? InternetAddress.anyIPv4 : _conf!.ip, _conf!.port);
+      }
       server.listen((request) async {
         if (_useCors) {
           if (request.method == 'OPTIONS') {
@@ -132,6 +135,13 @@ class DartExpress {
           String.fromCharCodes(Iterable.generate(15, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
     } else {
       _securityPhrase = secretFrase;
+    }
+  }
+
+  void _useHTTPS(bool use, parameters) {
+    _useHttps = use;
+    if (use) {
+      print(parameters);
     }
   }
 
