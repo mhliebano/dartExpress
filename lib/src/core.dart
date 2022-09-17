@@ -19,6 +19,7 @@ class DartExpress {
   bool _useStatic = false;
   bool _useSecurity = false;
   bool _useHttps = false;
+  ConfigHttps? _configHttps;
 
   DartExpress({required ConfigServer conf}) {
     _conf = conf;
@@ -32,6 +33,11 @@ class DartExpress {
       print("Server run at ${_conf!.ip == null ? "*" : _conf!.ip}:${_conf!.port}");
       late HttpServer server;
       if (_useHttps) {
+        SecurityContext context = SecurityContext()
+          ..useCertificateChain(_configHttps!.chain)
+          ..usePrivateKey(_configHttps!.key, password: _configHttps!.password);
+        server =
+            await HttpServer.bindSecure(_conf!.ip == null ? InternetAddress.anyIPv4 : _conf!.ip, _conf!.port, context);
       } else {
         server = await HttpServer.bind(_conf!.ip == null ? InternetAddress.anyIPv4 : _conf!.ip, _conf!.port);
       }
@@ -138,10 +144,10 @@ class DartExpress {
     }
   }
 
-  void _useHTTPS(bool use, parameters) {
+  void _useHTTPS(bool use, {ConfigHttps? config}) {
     _useHttps = use;
     if (use) {
-      print(parameters);
+      _configHttps = config;
     }
   }
 
