@@ -8,7 +8,7 @@ void main(List<String> args) {
     server.useCors(true);
     server.useStatic(true);
     server.useSecurity(true, secretFrase: "MyT0k3n!Secret");
-    print(server.newSecurityToken());
+    //server.useHTTPS(true, config: ConfigHttps(chain: "chain", key: "key"));
     server.route(
       Route(
         verb: routeVerb.GET,

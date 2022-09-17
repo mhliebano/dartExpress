@@ -9,9 +9,9 @@ class ConfigServer {
 class ConfigHttps {
   String chain;
   String key;
-  String? password;
+  String password = "";
 
-  ConfigHttps({required this.chain, required this.key, this.password});
+  ConfigHttps({required this.chain, required this.key, this.password = ""});
 }
 
 class ConfigCORS {}

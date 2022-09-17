@@ -144,7 +144,7 @@ class DartExpress {
     }
   }
 
-  void _useHTTPS(bool use, {ConfigHttps? config}) {
+  void useHTTPS(bool use, {ConfigHttps? config}) {
     _useHttps = use;
     if (use) {
       _configHttps = config;
