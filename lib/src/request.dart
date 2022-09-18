@@ -26,11 +26,14 @@ class IncomingRequest {
 
   late Uri _uri;
 
-  IncomingRequest.fromHttpRequest({required HttpRequest req}) {
+  String? _secretPhrase;
+
+  IncomingRequest.fromHttpRequest({required HttpRequest req, String? securePhrase}) {
     _response = req.response;
     _headers = req.headers;
     _connection = req.connectionInfo;
     _uri = req.uri;
+    _secretPhrase = securePhrase;
     if (req.uri.hasQuery) {
       _queryParams = req.uri.queryParameters;
     }
@@ -81,5 +84,22 @@ class IncomingRequest {
           '<html><head></head><body><h2>404 Not Found</h2><h3>The page ${file} no found in this server</h3></body></html>');
       _response.close();
     }
+  }
+
+  String newSecurityToken({Map<String, dynamic>? payload}) {
+    final Base64Encoder base64Encoder = base64.encoder;
+
+    String header = 'DTS.${DateTime.now().millisecondsSinceEpoch}';
+    String encodedHeader = base64Encoder.convert(header.codeUnits).replaceAll("=", '');
+    Map<String, dynamic> pay;
+    if (payload == null) {
+      pay = {"payload": "no data"};
+    } else {
+      pay = payload;
+    }
+    final String encodedpayload = base64Encoder.convert(json.encode(pay).codeUnits).replaceAll("=", '');
+    String secret = _secretPhrase!;
+    String encodedFrase = base64Encoder.convert(secret.codeUnits).replaceAll("=", '');
+    return "${encodedHeader}.${encodedpayload}.${encodedFrase}";
   }
 }

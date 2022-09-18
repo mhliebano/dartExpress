@@ -5,7 +5,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:dart_express/dartExpress.dart';
 import 'package:dart_express/src/cors.dart';
-import 'package:dart_express/src/routerList.dart';
+import 'package:dart_express/src/routerInternal.dart';
 
 import 'filedetails.dart';
 
@@ -99,7 +99,6 @@ class DartExpress {
                 return;
               }
             }
-
             handleroute.callback(reqs);
           }
         }
@@ -270,41 +269,5 @@ class DartExpress {
       st = securityTokenStatus.TOKEN_NOT_VALID;
     }
     return st;
-  }
-
-  String newSecurityToken({Map<String, dynamic>? payload}) {
-    final Base64Encoder base64Encoder = base64.encoder;
-
-    String header = 'DTS.${DateTime.now().millisecondsSinceEpoch}';
-    String encodedHeader = base64Encoder.convert(header.codeUnits).replaceAll("=", '');
-    Map<String, dynamic> pay;
-    if (payload == null) {
-      pay = {"payload": "no data"};
-    } else {
-      pay = payload;
-    }
-    final String encodedpayload = base64Encoder.convert(json.encode(pay).codeUnits).replaceAll("=", '');
-    String secret = _securityPhrase;
-    String encodedFrase = base64Encoder.convert(secret.codeUnits).replaceAll("=", '');
-    return "${encodedHeader}.${encodedpayload}.${encodedFrase}";
-  }
-}
-
-class ConfigSecure {
-  String? _pathToChain;
-  String? _pathToKey;
-  String? _password;
-  String get pathToChain => _pathToChain!;
-  String get pathToKey => _pathToKey!;
-  String get password => _password!;
-
-  ConfigSecure({required String pathToChain, required String pathToKey, required String password}) {
-    _pathToChain = pathToChain;
-    _pathToKey = pathToKey;
-    _password = password;
-  }
-
-  factory ConfigSecure.none() {
-    return ConfigSecure(pathToChain: "", pathToKey: "", password: "");
   }
 }
