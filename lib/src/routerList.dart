@@ -99,18 +99,29 @@ abstract class RoutesList {
     return {"regex": regexp, "param": parameterPath, "base": isComodite ? path.substring(0, file!.start) : path};
   }
 
-  static RouteInternal isRouterRegister(String method, String path, bool isStatic) {
+  static Future<RouteInternal> isRouterRegister(String method, String path, bool isStatic) async {
     late RouteInternal? routeInternal;
     try {
       bool findStatic = false;
-      RegExpMatch? file = RegExp(
+      RegExpMatch? fileMatch = RegExp(
               r'(\w+\.html|\w+\.css|\w+\.js|\w+\.ico|\w+\.gif|\w+\.png|\w+\.jpeg|\w+\.jpg|\w+\.svg|\w+\.webp){1}.*?',
               dotAll: false,
               multiLine: false)
           .firstMatch(path);
+      String? file = fileMatch == null ? null : fileMatch[0]!;
       if (isStatic && file != null) {
-        print("usando static y es un archivo");
         findStatic = true;
+      } else {
+        if (await FileSystemEntity.isDirectory("./www$path")) {
+          if (!path.endsWith("/")) {
+            path = "${path}/index.html";
+          } else {
+            path = "${path}index.html";
+          }
+
+          file = path;
+          findStatic = true;
+        }
       }
 
       switch (method.toUpperCase()) {
@@ -120,9 +131,10 @@ abstract class RoutesList {
             routeInternal = RouteInternal(
                 verb: routeVerb.GET, path: path, callback: () {}, regex: "", paramSegment: [], useSecurity: false);
             routeInternal.isStatic = true;
+
             if (a.existsSync()) {
               routeInternal.is404 = false;
-              routeInternal.regex = _getType(file![0]!);
+              routeInternal.regex = _getType(file!);
             } else {
               routeInternal.is404 = true;
             }
@@ -142,7 +154,7 @@ abstract class RoutesList {
             routeInternal.isStatic = true;
             if (a.existsSync()) {
               routeInternal.is404 = false;
-              routeInternal.regex = _getType(file![0]!);
+              routeInternal.regex = _getType(file!);
             } else {
               routeInternal.is404 = true;
             }
@@ -220,7 +232,7 @@ abstract class RoutesList {
         t = "image/jpeg; charset=utf-8";
         break;
     }
-    print(t);
+    //print(t);
     return t;
   }
 }

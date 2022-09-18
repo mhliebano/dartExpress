@@ -1,9 +1,8 @@
 class ConfigServer {
-  String? ip;
+  String ip;
   int port;
-  bool useSecure;
 
-  ConfigServer({this.ip, this.port = 9090, this.useSecure = false});
+  ConfigServer({this.ip = "127.0.0.1", this.port = 9090});
 }
 
 class ConfigHttps {

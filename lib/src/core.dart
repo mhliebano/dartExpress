@@ -30,16 +30,16 @@ class DartExpress {
       Directory("./tmp/files").createSync(recursive: true);
     }
     runZonedGuarded(() async {
-      print("Server run at ${_conf!.ip == null ? "*" : _conf!.ip}:${_conf!.port}");
+      print("Server run at ${_conf!.ip}:${_conf!.port}");
       late HttpServer server;
       if (_useHttps) {
         SecurityContext context = SecurityContext()
           ..useCertificateChain(_configHttps!.chain)
           ..usePrivateKey(_configHttps!.key, password: _configHttps!.password);
         server =
-            await HttpServer.bindSecure(_conf!.ip == null ? InternetAddress.anyIPv4 : _conf!.ip, _conf!.port, context);
+            await HttpServer.bindSecure(_conf!.ip == "*" ? InternetAddress.anyIPv4 : _conf!.ip, _conf!.port, context);
       } else {
-        server = await HttpServer.bind(_conf!.ip == null ? InternetAddress.anyIPv4 : _conf!.ip, _conf!.port);
+        server = await HttpServer.bind(_conf!.ip == "*" ? InternetAddress.anyIPv4 : _conf!.ip, _conf!.port);
       }
       server.listen((request) async {
         if (_useCors) {
@@ -49,14 +49,14 @@ class DartExpress {
           }
           request.response.headers.set("Access-Control-Allow-Origin", "*");
         }
-        RouteInternal? handleroute = _getRoute(request.method, request.uri);
+        RouteInternal? handleroute = await _getRoute(request.method, request.uri);
         IncomingRequest reqs = IncomingRequest.fromHttpRequest(req: request);
         if (handleroute.isStatic) {
           if (handleroute.is404) {
             request.response.headers.contentType = ContentType.html;
             request.response.statusCode = HttpStatus.notFound;
             request.response.write(
-                '<html><head></head><body><h2>404 Not Found</h2><h3>The page ${handleroute.path} no found in this server</h3></body></html>');
+                '<html><head></head><body><h2>404 Not Found </h2><h3>The page ${handleroute.path} no found in this server</h3><h5>DartExpress by mmsystems</h5></body></html>');
             request.response.close();
           } else {
             if (request.contentLength > 0) {
@@ -151,7 +151,7 @@ class DartExpress {
     }
   }
 
-  RouteInternal _getRoute(String method, Uri uri) {
+  Future<RouteInternal> _getRoute(String method, Uri uri) {
     print("llego por $method al path ${uri.path}");
     return RoutesList.isRouterRegister(method, uri.path, _useStatic);
   }
