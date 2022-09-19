@@ -10,6 +10,15 @@
     <p>{{name}}</p>
     <p>{{company}}</p>
     {{message}}
-    <a href="http://localhost:9090/api/test/single/{{action}}/">Cambiar</a>
+    <a href="/api/test/render/{{action}}/">Cambiar</a>
+    <div>
+        <form action="/api/test/data/" method="POST">
+            <label>Name</label>
+            <input name="name" type="text"/>
+            <label>Age</label>
+            <input name="age" type="text"/>
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
 </body>
 </html>

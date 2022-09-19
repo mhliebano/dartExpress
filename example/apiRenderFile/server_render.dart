@@ -11,7 +11,7 @@ void main(List<String> args) {
     server.route(
       Route(
         verb: routeVerb.GET,
-        path: '/api/test/single/:action/',
+        path: '/api/test/render/:action/',
         callback: (IncomingRequest request) {
           Map<String, dynamic> dataSegment = request.segmentsData;
           String alert = "<div style='color:red'>No actions</div>";
@@ -24,6 +24,16 @@ void main(List<String> args) {
           }
           request
               .renderFile("/test.html", {"name": "Miguel", "company": "MMSytems", "message": alert, "action": action});
+        },
+      ),
+    );
+
+    server.route(
+      Route(
+        verb: routeVerb.POST,
+        path: '/api/test/data/',
+        callback: (IncomingRequest request) {
+          request.renderFile("/test2.html", request.body);
         },
       ),
     );
