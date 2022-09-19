@@ -50,7 +50,7 @@ class DartExpress {
           request.response.headers.set("Access-Control-Allow-Origin", "*");
         }
         RouteInternal? handleroute = await _getRoute(request.method, request.uri);
-        IncomingRequest reqs = IncomingRequest.fromHttpRequest(req: request);
+        IncomingRequest reqs = IncomingRequest.fromHttpRequest(req: request, securePhrase: _securityPhrase);
         if (handleroute.isStatic) {
           if (handleroute.is404) {
             request.response.headers.contentType = ContentType.html;
@@ -90,7 +90,10 @@ class DartExpress {
             }
             if (handleroute.useSecurity && _useSecurity) {
               String? auth = request.headers["authorization"] == null ? null : request.headers["authorization"]!.first;
-              securityTokenStatus status = _checkToken(auth);
+              Map<String, dynamic> checkStatus = _checkToken(auth);
+              reqs.payload = checkStatus["payload"];
+              securityTokenStatus status = checkStatus["tokenStatus"];
+
               if (status != securityTokenStatus.STATUS_OK) {
                 request.response.headers.contentType = ContentType.json;
                 request.response.statusCode = HttpStatus.forbidden;
@@ -151,7 +154,6 @@ class DartExpress {
   }
 
   Future<RouteInternal> _getRoute(String method, Uri uri) {
-    print("llego por $method al path ${uri.path}");
     return RoutesList.isRouterRegister(method, uri.path, _useStatic);
   }
 
@@ -218,8 +220,9 @@ class DartExpress {
     return body;
   }
 
-  securityTokenStatus _checkToken(String? auth) {
+  Map<String, dynamic> _checkToken(String? auth) {
     securityTokenStatus st = securityTokenStatus.STATUS_OK;
+    Map<String, dynamic> payload = {};
     if (auth != null) {
       List<String> pieces = auth.split(" ");
       if (pieces.length == 2) {
@@ -239,9 +242,13 @@ class DartExpress {
               dif = 4 - (encodedFrase.length % 4);
               encodedFrase = encodedFrase.padRight(encodedFrase.length + dif, "=");
             }
+            if (encodedPayload.length % 4 != 0) {
+              dif = 4 - (encodedPayload.length % 4);
+              encodedPayload = encodedPayload.padRight(encodedPayload.length + dif, "=");
+            }
             String header = utf8.decode(base64decoder.convert(encodedHeader));
             String secret = utf8.decode(base64decoder.convert(encodedFrase));
-            String payload = utf8.decode(base64decoder.convert(encodedPayload));
+            payload = json.decode(utf8.decode(base64decoder.convert(encodedPayload)));
             if (header.split(".")[0] != "DTS") {
               st = securityTokenStatus.TOKEN_NOT_VALID;
             } else {
@@ -268,6 +275,6 @@ class DartExpress {
     } else {
       st = securityTokenStatus.TOKEN_NOT_VALID;
     }
-    return st;
+    return {"tokenStatus": st, "payload": payload};
   }
 }

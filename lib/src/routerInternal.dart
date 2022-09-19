@@ -29,7 +29,6 @@ abstract class RoutesList {
   static void registerRoute(Route route) {
     try {
       Map<String, dynamic> reg = _validRoute(route.path);
-      print(reg);
       RouteInternal routeInternal = RouteInternal(
           verb: route.verb,
           path: route.path,
@@ -186,7 +185,6 @@ abstract class RoutesList {
         valuesPath.removeLast();
         valuesPath.removeAt(0);
         List<dynamic> values = valuesPath.getRange(valuesPath.length - lengthParam, valuesPath.length).toList();
-        print(values);
         Map<String, dynamic> tmp = {};
         for (int i = 0; i < lengthParam; i++) {
           tmp[routeInternal.paramSegment[i]] = values[i];
@@ -237,7 +235,6 @@ abstract class RoutesList {
         t = "image/jpeg; charset=utf-8";
         break;
     }
-    //print(t);
     return t;
   }
 }

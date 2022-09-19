@@ -67,7 +67,6 @@ void main(List<String> args) {
         verb: routeVerb.POST,
         path: '/api/test/set/',
         callback: (IncomingRequest request) async {
-          print(request.body);
           File dataBrute = File("./datos.json");
           final data = json.decode(await dataBrute.readAsString());
           data.add({"name": request.body["name"], "skill": request.body["name"], "id": data.length + 1});
@@ -123,6 +122,44 @@ void main(List<String> args) {
           } else {
             request.responseJSON({"code": 408, "message": "El Registro no existe"}, HttpStatus.badRequest);
           }
+        },
+      ),
+    );
+
+    server.route(
+      Route(
+        verb: routeVerb.POST,
+        path: '/api/test/auth/',
+        callback: (IncomingRequest request) async {
+          if (request.body["user"] == "admin" && request.body["pass"] == "admin") {
+            String token = request.newSecurityToken(payload: {"user": "admin", "id": 9999});
+            request.responseJSON({
+              "code": 200,
+              "message": "login success",
+              "data": {"token": token}
+            }, HttpStatus.ok);
+          } else {
+            request.responseJSON({
+              "code": 201,
+              "message": "login fail",
+              "data": {"token": ""}
+            }, HttpStatus.notFound);
+          }
+        },
+      ),
+    );
+
+    server.route(
+      Route(
+        verb: routeVerb.GET,
+        path: '/api/test/private/',
+        security: true,
+        callback: (IncomingRequest request) async {
+          request.responseJSON({
+            "code": 200,
+            "message": "you're welcome",
+            "data": request.payload,
+          }, HttpStatus.ok);
         },
       ),
     );
