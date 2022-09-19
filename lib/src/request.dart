@@ -102,4 +102,26 @@ class IncomingRequest {
     String encodedFrase = base64Encoder.convert(secret.codeUnits).replaceAll("=", '');
     return "${encodedHeader}.${encodedpayload}.${encodedFrase}";
   }
+
+  void renderFile(String file, Map<String, dynamic> data) async {
+    _response.headers.set(HttpHeaders.contentTypeHeader, "text/html; charset=utf-8");
+    _response.statusCode = HttpStatus.ok;
+
+    final sfile = File("./www${file}");
+    if (sfile.existsSync()) {
+      _response.statusCode = HttpStatus.ok;
+      String page = await sfile.readAsString();
+      data.forEach((key, value) {
+        page = page.replaceAll(RegExp('{{${key}}}'), value);
+      });
+
+      _response.write(page);
+      _response.close();
+    } else {
+      _response.statusCode = HttpStatus.notFound;
+      _response.write(
+          '<html><head></head><body><h2>404 Not Found</h2><h3>The page ${file} no found in this server</h3></body></html>');
+      _response.close();
+    }
+  }
 }
