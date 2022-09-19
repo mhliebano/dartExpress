@@ -92,12 +92,12 @@ class DartExpress {
               String? auth = request.headers["authorization"] == null ? null : request.headers["authorization"]!.first;
               Map<String, dynamic> checkStatus = _checkToken(auth);
               reqs.payload = checkStatus["payload"];
-              securityTokenStatus status = checkStatus["tokenStatus"];
+              reqs.securityStatus = checkStatus["tokenStatus"];
 
-              if (status != securityTokenStatus.STATUS_OK) {
+              if (checkStatus["tokenStatus"] != securityTokenStatus.STATUS_OK) {
                 request.response.headers.contentType = ContentType.json;
                 request.response.statusCode = HttpStatus.forbidden;
-                request.response.write('{"status":403, "response":$status}');
+                request.response.write('{"status":403, "response":${checkStatus["tokenStatus"]}}');
                 request.response.close();
                 return;
               }

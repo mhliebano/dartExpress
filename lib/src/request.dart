@@ -14,13 +14,30 @@ class IncomingRequest {
 
   Map<String, dynamic> _queryParams = {};
   Map<String, dynamic> get params => _queryParams;
+  set params(Map<String, dynamic> p) {
+    _queryParams = p;
+  }
 
-  Map<String, dynamic> segmentsData = {};
+  Map<String, dynamic> _segmentsData = {};
+  Map<String, dynamic> get segmentsData => _segmentsData;
+  set segmentsData(Map<String, dynamic> p) {
+    _segmentsData = p;
+  }
 
   HttpHeaders? _headers;
   HttpConnectionInfo? _connection;
-  securityTokenStatus securityStatus = securityTokenStatus.STATUS_OK;
-  Map<String, dynamic> payload = {};
+
+  securityTokenStatus _securityStatus = securityTokenStatus.STATUS_OK;
+  securityTokenStatus get securityStatus => _securityStatus;
+  set securityStatus(securityTokenStatus p) {
+    _securityStatus = p;
+  }
+
+  Map<String, dynamic> _payload = {};
+  Map<String, dynamic> get payload => _payload;
+  set payload(Map<String, dynamic> p) {
+    _payload = p;
+  }
 
   HttpHeaders? get headers => _headers;
   HttpConnectionInfo? get connectionInfo => _connection;
