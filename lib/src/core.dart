@@ -50,7 +50,7 @@ class DartExpress {
           request.response.headers.set("Access-Control-Allow-Origin", "*");
         }
         RouteInternal? handleroute = await _getRoute(request.method, request.uri);
-        IncomingRequest reqs = IncomingRequest.fromHttpRequest(req: request);
+        IncomingRequest reqs = IncomingRequest.fromHttpRequest(req: request, securePhrase: _securityPhrase);
         if (handleroute.isStatic) {
           if (handleroute.is404) {
             request.response.headers.contentType = ContentType.html;
@@ -241,6 +241,10 @@ class DartExpress {
             if (encodedFrase.length % 4 != 0) {
               dif = 4 - (encodedFrase.length % 4);
               encodedFrase = encodedFrase.padRight(encodedFrase.length + dif, "=");
+            }
+            if (encodedPayload.length % 4 != 0) {
+              dif = 4 - (encodedPayload.length % 4);
+              encodedPayload = encodedPayload.padRight(encodedPayload.length + dif, "=");
             }
             String header = utf8.decode(base64decoder.convert(encodedHeader));
             String secret = utf8.decode(base64decoder.convert(encodedFrase));
