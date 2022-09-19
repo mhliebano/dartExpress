@@ -20,6 +20,7 @@ class IncomingRequest {
   HttpHeaders? _headers;
   HttpConnectionInfo? _connection;
   securityTokenStatus securityStatus = securityTokenStatus.STATUS_OK;
+  Map<String, dynamic> payload = {};
 
   HttpHeaders? get headers => _headers;
   HttpConnectionInfo? get connectionInfo => _connection;
