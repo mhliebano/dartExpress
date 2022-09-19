@@ -183,10 +183,15 @@ abstract class RoutesList {
       int lengthParam = routeInternal!.paramSegment.length;
       if (lengthParam > 0) {
         List<dynamic> valuesPath = path.split("/");
+        valuesPath.removeLast();
+        valuesPath.removeAt(0);
+        List<dynamic> values = valuesPath.getRange(valuesPath.length - lengthParam, valuesPath.length).toList();
+        print(values);
         Map<String, dynamic> tmp = {};
-        for (int i = lengthParam; i >= 1; i--) {
-          tmp[routeInternal.paramSegment[i - 1]] = valuesPath[i + lengthParam];
+        for (int i = 0; i < lengthParam; i++) {
+          tmp[routeInternal.paramSegment[i]] = values[i];
         }
+
         routeInternal.segmentsData = tmp;
       }
 

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dart_express/dartExpress.dart';
 
@@ -6,149 +7,126 @@ void main(List<String> args) {
     ConfigServer config = ConfigServer();
     DartExpress server = DartExpress(conf: config);
     server.useCors(true);
-    server.useStatic(true);
     server.useSecurity(true, secretFrase: "MyT0k3n!Secret");
+
     //server.useHTTPS(true, config: ConfigHttps(chain: "chain", key: "key"));
     server.route(
       Route(
         verb: routeVerb.GET,
-        path: '/test/cool/render/',
+        path: '/api/test/single/',
         callback: (IncomingRequest request) {
-          print(request.params);
-          request.responseFile("/hello.html", headersFileType.HTML, {});
-        },
-      ),
-    );
-
-    server.route(
-      Route(
-        verb: routeVerb.GET,
-        path: '/test/cool/image/',
-        callback: (IncomingRequest request) {
-          print(request.params);
-          request.responseFile("/img/dart.png", headersFileType.IMAGE_PNG, {});
-        },
-      ),
-    );
-
-    server.route(
-      Route(
-        verb: routeVerb.GET,
-        path: '/test/render/',
-        callback: (IncomingRequest request) {
-          print(request.params);
-          request.responseFile("/src/hello.html", headersFileType.HTML, {});
-        },
-      ),
-    );
-
-    server.route(
-      Route(
-        verb: routeVerb.GET,
-        path: '/test/cool/',
-        callback: (IncomingRequest request) {
-          request.responseJSON({"code": 200, "message": "Nice tool in te path test/cool"}, HttpStatus.ok);
-        },
-      ),
-    );
-
-    server.route(
-      Route(
-        verb: routeVerb.GET,
-        path: '/test/nice/:data1/:data3/',
-        callback: (IncomingRequest request) {
-          print(request.body);
-          print(request.segmentsData);
           request.response.statusCode = HttpStatus.ok;
           request.response.headers.contentType = ContentType.json;
-          request.response.write(
-              '{"status":200, "response":"Ok test/nice with 2 parameters","data":"${request.segmentsData["data1"]} ${request.segmentsData["data3"]}"}');
+          request.response.write('{"status":200, "response":"Ok single api endpoint","data":"{}"}');
           request.response.close();
         },
-        security: true,
+      ),
+    );
+
+    server.route(
+      Route(
+        verb: routeVerb.GET,
+        path: '/api/test/all/',
+        callback: (IncomingRequest request) async {
+          File dataBrute = File("./datos.json");
+          String data = await dataBrute.readAsString();
+          request.response.statusCode = HttpStatus.ok;
+          request.response.headers.contentType = ContentType.json;
+          request.response.write('{"status":200, "response":"Data from Api","data":${data}}');
+          request.response.close();
+        },
+      ),
+    );
+
+    server.route(
+      Route(
+        verb: routeVerb.GET,
+        path: '/api/test/get/:id/',
+        callback: (IncomingRequest request) async {
+          final dataRequestUrl = request.segmentsData;
+          File dataBrute = File("./datos.json");
+          final data = json.decode(await dataBrute.readAsString());
+          final lang = data.firstWhere((element) {
+            return element["id"].toString() == dataRequestUrl["id"].toString();
+          }, orElse: () => {});
+          request.response.headers.contentType = ContentType.json;
+          if (lang.isNotEmpty) {
+            request.response.statusCode = HttpStatus.ok;
+            request.response.write('{"status":200, "response":"Data from Api","data":${lang}}');
+          } else {
+            request.response.statusCode = HttpStatus.notFound;
+            request.response.write('{"status":404, "response":"Data not found","data":{}}');
+          }
+          request.response.close();
+        },
       ),
     );
 
     server.route(
       Route(
         verb: routeVerb.POST,
-        path: '/test/posting/',
-        callback: (IncomingRequest request) {
-          print("route => ${request.body}");
-          print(request.body["file"].fileName);
-          request.response.statusCode = HttpStatus.ok;
-          request.response.write('{"status":200, "response":"Ok post it"}');
-          request.response.close();
+        path: '/api/test/set/',
+        callback: (IncomingRequest request) async {
+          print(request.body);
+          File dataBrute = File("./datos.json");
+          final data = json.decode(await dataBrute.readAsString());
+          data.add({"name": request.body["name"], "skill": request.body["name"], "id": data.length + 1});
+          final saveData = json.encode(data);
+          dataBrute.writeAsString(saveData);
+          request.responseJSON({"code": 200, "message": "Actualizada la lista"}, HttpStatus.ok);
         },
       ),
     );
 
-    //enable securty tokens
-    // server.useSecurityToken(phraseSecret: "phraseSecret!");
+    server.route(
+      Route(
+        verb: routeVerb.PUT,
+        path: '/api/test/put/:id/',
+        callback: (IncomingRequest request) async {
+          final dataRequestUrl = request.segmentsData;
+          final dataBody = request.body;
+          File dataBrute = File("./datos.json");
+          List data = json.decode(await dataBrute.readAsString());
+          int langIndex = data.indexWhere((element) {
+            return element["id"].toString() == dataRequestUrl["id"].toString();
+          });
 
-    // //List endpoints
-    // server.useList(Test.getRoute());
+          if (langIndex != -1) {
+            data[langIndex] = {"name": dataBody["name"], "skill": dataBody["skill"], "id": data[langIndex]["id"]};
+            final saveData = json.encode(data);
+            dataBrute.writeAsString(saveData);
+            request.responseJSON({"code": 200, "message": "Actualizado el registro"}, HttpStatus.ok);
+          } else {
+            request.responseJSON({"code": 408, "message": "El Registro no existe"}, HttpStatus.badRequest);
+          }
+        },
+      ),
+    );
 
-    // //Simple endpoint GET return html
-    // server.useGet(
-    //     route: "/api/test/",
-    //     function: (Request req, HttpResponse response) {
-    //       response.statusCode = HttpStatus.ok;
-    //       response.headers.contentType = ContentType.html;
-    //       response.writeAll(["<h1>", "Respuesta", "</h1>"]);
-    //     });
+    server.route(
+      Route(
+        verb: routeVerb.DELETE,
+        path: '/api/test/delete/:id/',
+        callback: (IncomingRequest request) async {
+          final dataRequestUrl = request.segmentsData;
+          File dataBrute = File("./datos.json");
+          List data = json.decode(await dataBrute.readAsString());
+          int langIndex = data.indexWhere((element) {
+            return element["id"].toString() == dataRequestUrl["id"].toString();
+          });
 
-    // //Simple endpoint GET return html file
-    // server.useGet(
-    //     route: "/api/test/file/",
-    //     function: (Request req, HttpResponse response) async {
-    //       response.statusCode = HttpStatus.ok;
-    //       response.headers.contentType = ContentType.html;
-    //       Uint8List f = File("./index.html").readAsBytesSync();
-    //       response.write(String.fromCharCodes(f));
-    //     });
+          if (langIndex != -1) {
+            data.removeAt(langIndex);
+            final saveData = json.encode(data);
+            dataBrute.writeAsString(saveData);
+            request.responseJSON({"code": 200, "message": "Se ha eliminado el registro"}, HttpStatus.ok);
+          } else {
+            request.responseJSON({"code": 408, "message": "El Registro no existe"}, HttpStatus.badRequest);
+          }
+        },
+      ),
+    );
 
-    // //Simple endpoint GET protected by securty tokens
-    // server.useGet(
-    //     route: "/api/test/private/",
-    //     security: true,
-    //     function: (Request req, HttpResponse response) async {
-    //       if (req.securityStatus == securityTokenStatus.STATUS_OK) {
-    //         response.statusCode = HttpStatus.ok;
-    //         response.headers.contentType = ContentType.html;
-    //         response.write("<h2>Hello open secret</h2>");
-    //       } else {
-    //         response.statusCode = HttpStatus.forbidden;
-    //         response.headers.contentType = ContentType.html;
-    //         response.write("<h2>fail request by ${req.securityStatus}</h2>");
-    //       }
-    //     });
-
-    // //Simple endpoint POST recive data form body form
-    // server.usePost(
-    //     route: "/api/test/auth/",
-    //     function: (Request req, HttpResponse res) {
-    //       print(req.bodyParams["user"]);
-    //       print(req.bodyParams["pass"]);
-    //       if (req.bodyParams["user"] == "admin" &&
-    //           req.bodyParams["pass"] == "dart2.12") {
-    //         String token = server.newSecurityToken();
-    //         res.statusCode = HttpStatus.ok;
-    //         res.headers.contentType = ContentType.json;
-    //         res.write('{"message":"welcome user dart","token":"$token"}');
-    //       } else {
-    //         res.statusCode = HttpStatus.ok;
-    //         res.headers.contentType = ContentType.json;
-    //         res.write('{"message":"your credentials is broken","token":""}');
-    //       }
-    //     });
-    //Default run server 127.0.0.1:9090
-    // server.run(
-    //     vhost: "satus.mmsystems.xyz",
-    //     useSecure: ConfigSecure(
-    //         pathToChain: "/etc/letsencrypt/archive/mmsystems.xyz/fullchain1.pem",
-    //         pathToKey: "/etc/letsencrypt/archive/mmsystems.xyz/privkey1.pem",
-    //         password: ""));
     server.run();
   } catch (e) {
     print(e);
