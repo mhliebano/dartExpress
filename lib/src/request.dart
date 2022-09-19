@@ -48,7 +48,7 @@ class IncomingRequest {
   }
 
   void responseFile(String file, headersFileType fileType, Map<String, dynamic> data) {
-    print("en el sendifle ${_uri.path}");
+    //print("en el sendifle ${_uri.path}");
     switch (fileType) {
       case headersFileType.HTML:
         _response.headers.set(HttpHeaders.contentTypeHeader, "text/html; charset=utf-8");

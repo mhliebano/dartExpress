@@ -154,7 +154,6 @@ class DartExpress {
   }
 
   Future<RouteInternal> _getRoute(String method, Uri uri) {
-    print("llego por $method al path ${uri.path}");
     return RoutesList.isRouterRegister(method, uri.path, _useStatic);
   }
 

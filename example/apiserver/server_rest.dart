@@ -67,7 +67,6 @@ void main(List<String> args) {
         verb: routeVerb.POST,
         path: '/api/test/set/',
         callback: (IncomingRequest request) async {
-          print(request.body);
           File dataBrute = File("./datos.json");
           final data = json.decode(await dataBrute.readAsString());
           data.add({"name": request.body["name"], "skill": request.body["name"], "id": data.length + 1});
