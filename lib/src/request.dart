@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:dart_express/dartExpress.dart';
+
+import 'package:dart_express/src/enums.dart';
+//import 'package:dart_express/dart_express.dart';
 
 class IncomingRequest {
   late HttpResponse _response;

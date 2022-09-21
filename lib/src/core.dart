@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:dart_express/dartExpress.dart';
+import 'package:dart_express/src/config.dart';
 import 'package:dart_express/src/cors.dart';
+import 'package:dart_express/src/enums.dart';
+import 'package:dart_express/src/request.dart';
 import 'package:dart_express/src/routerInternal.dart';
+import 'package:dart_express/src/routes.dart';
 
 import 'filedetails.dart';
 
