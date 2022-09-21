@@ -2,7 +2,7 @@ name: dart_express
 version: 1.0.10+20
 description: >-
   Api Server inspired in expressjs implement in pure dart
-homepage: https://github/mhliebano/dartExpress
+homepage: https://mmsystems.xyz/dartExpress
 documentation: https://github/mhliebano/dartExpress/doc
 environment:
   sdk: '>=2.17.0 <3.0.0'
