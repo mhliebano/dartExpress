@@ -3,6 +3,8 @@
 ///
 /// A open source project authorized by mhliebano@gmail.com
 
+library dear;
+
 export 'src/request.dart';
 export 'src/core.dart';
 export 'src/routes.dart';
