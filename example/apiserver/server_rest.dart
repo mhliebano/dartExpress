@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:dartExpress/dartExpress.dart';
+import 'package:dear/dear.dart';
 
 void main(List<String> args) {
   try {
     ConfigServer config = ConfigServer();
-    DartExpress server = DartExpress(conf: config);
+    Dear server = Dear(conf: config);
     server.useCors(true);
     server.useSecurity(true, secretFrase: "MyT0k3n!Secret");
 

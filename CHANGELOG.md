@@ -13,7 +13,7 @@ straightforward as possible.
 
 ### Added
 
-- [DartExpress-1.0.10+20]
+- [Dear-1.0.10+20]
 
 ### Changed
 

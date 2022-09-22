@@ -1,7 +1,7 @@
-import 'package:dartExpress/dartExpress.dart';
+import 'package:dear/dear.dart';
 
 void main(List<String> args) {
-  DartExpress server = DartExpress(conf: ConfigServer());
+  Dear server = Dear(conf: ConfigServer());
   server.useStatic(true);
   server.run();
 }

@@ -3,16 +3,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:dartExpress/src/config.dart';
-import 'package:dartExpress/src/cors.dart';
-import 'package:dartExpress/src/enums.dart';
-import 'package:dartExpress/src/request.dart';
-import 'package:dartExpress/src/routerInternal.dart';
-import 'package:dartExpress/src/routes.dart';
+import 'package:dear/src/config.dart';
+import 'package:dear/src/cors.dart';
+import 'package:dear/src/enums.dart';
+import 'package:dear/src/request.dart';
+import 'package:dear/src/routerInternal.dart';
+import 'package:dear/src/routes.dart';
 
 import 'filedetails.dart';
 
-class DartExpress {
+class Dear {
   String _securityPhrase = "";
   Duration? _securityTokenDuration = Duration(minutes: 10);
 
@@ -24,7 +24,7 @@ class DartExpress {
   bool _useHttps = false;
   ConfigHttps? _configHttps;
 
-  DartExpress({required ConfigServer conf}) {
+  Dear({required ConfigServer conf}) {
     _conf = conf;
   }
 
