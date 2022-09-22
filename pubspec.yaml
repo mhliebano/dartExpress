@@ -1,4 +1,4 @@
-name: dart_express
+name: dartExpress
 version: 1.0.10+20
 description: >-
   Api Server inspired in expressjs implement in pure dart
