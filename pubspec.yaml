@@ -1,5 +1,5 @@
 name: dear
-version: 1.0.10+20
+version: 1.0.10+21
 description: >-
   Api Server inspired in expressjs implement in pure dart, Dart Easy Api Rest (DEAR)
 homepage: https://github.com/mhliebano/dartExpress

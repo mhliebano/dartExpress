@@ -1,79 +1,100 @@
-# DARTEXPRESS
+# dear
 
-DartExpress is a simple api server inspired in package express to NodeJS
+Dart
 
-## Class
+easy
 
-> DartExpress: Primary class
+api
 
-***Constructor***
+rest
 
-DartExpress(optional ConfigServer conf)
+server
 
-***Propertys***
+is a simple and easy builder api server inspired in package express to NodeJS
 
-None
 
-***Methods***
+<code><img height="24" src="https://raw.githubusercontent.com/github/explore/80688e429a7d4ef2fca1e82350fe8e3517d3494d/topics/dart/dart.png"></code>
 
-* void run() => run server
+Your contributing is welcome
 
-* void route( required Route route ) => add route to server
+## Installing
 
-* void useCors(bool use, {options}) => enabled/disabled Cors Headers response
+Add the following to your `pubspec.yaml` file:
 
-* void useHTTPS(bool use, {options}) => enable Secure Protocol HTTPS
+```yaml
+dependencies:
+  dear: any
+```
 
-* void useStatic(bool use) => enable server files statics from folder www
+## Usage
+```dart
+  //Simple server static files (folder wwww)
+  Dear server = Dear(conf: ConfigServer());
+  server.useStatic(true);
+  server.run();
+```
 
-* void useSecurity(bool) => enable/disable secure tokens (as like JWT)
+```dart
+ConfigServer config = ConfigServer();
+    //Simple server API response
+    Dear server = Dear(conf: config);
+    server.useCors(true);
+    server.useSecurity(true, secretFrase: "MyT0k3n!Secret");
+    //server.useHTTPS(true, config: ConfigHttps(chain: "chain", key: "key"));
 
-> Route
+    // Public endpoint
+    server.route(
+      Route(
+        verb: routeVerb.GET,
+        path: '/api/test/single/',
+        callback: (IncomingRequest request) {
+          request.response.statusCode = HttpStatus.ok;
+          request.response.headers.contentType = ContentType.json;
+          request.response.write('{"status":200, "response":"Ok single api endpoint","data":"{}"}');
+          request.response.close();
+        },
+      ),
+    );
 
-***Constructor***
+    //Auth end point to send Token
+    server.route(
+      Route(
+        verb: routeVerb.POST,
+        path: '/api/test/auth/',
+        callback: (IncomingRequest request) async {
+          if (request.body["user"] == "admin" && request.body["pass"] == "admin") {
+            String token = request.newSecurityToken(payload: {"user": "admin", "id": 9999});
+            request.responseJSON({
+              "code": 200,
+              "message": "login success",
+              "data": {"token": token}
+            }, HttpStatus.ok);
+          } else {
+            request.responseJSON({
+              "code": 201,
+              "message": "login fail",
+              "data": {"token": ""}
+            }, HttpStatus.notFound);
+          }
+        },
+      ),
+    );
 
-Route(
-    Function callback,
-    RouteVerb verb,
-    String path,
-    bool? securty
-)
+    //private end point
+    server.route(
+      Route(
+        verb: routeVerb.GET,
+        path: '/api/test/private/',
+        security: true,
+        callback: (IncomingRequest request) async {
+          request.responseJSON({
+            "code": 200,
+            "message": "you're welcome",
+            "data": request.payload,
+          }, HttpStatus.ok);
+        },
+      ),
+    );
+    server.run();
+```
 
-***Propertys***
-
-* callback: Function (IncomingRequest request){ you code here }
-    Required, Contains the code and logic to execute in the http request
-
-* verb: RouteVerb enum
-    Required, is a action in the request GET, POST,PUT, DELETE, OPTION
-
-* path: String /segm1/segm2/segment3/
-    Required, It is the route that validates an http request,  note that the route starts with / and ends with /
-
-* securty; Bool true/false
-    Optional, tells the server whether to validate an authorization token in the http request
-
-> IncomingRequest
-
-***Constructor***
-    No need to instantiate the class, is a parameter to callback y Route class
-
-***Propertys***
-
-* body => Map<String,dynamic>, data send by POST, JSON, FORMS
-
-* connectionInfo => ConnectionsInfo, object inherited from HttpRequest object
-
-* headers => HttpHeaders, object inherited from HttpRequest object
-
-* params  => Map<String,dynamic>, data send by URL (?data=1&data=foo)
-
-* payload => Map<String,dynamic>, data decoded from token security
-
-* response => HttpResponse, object inherited from HttpRequest object
-
-* securityStatus =>  SecurtyTokenStatus, status of token security
-
-* segmentsData => Map<String,dynamic>, data send by segments of path
-
-***Methods***

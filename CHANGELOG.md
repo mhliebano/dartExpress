@@ -1,15 +1,21 @@
 
 # Change Log
 
-All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](http://keepachangelog.com/)
-and this project adheres to [Semantic Versioning](http://semver.org/).
+### Added
 
-## [Unreleased] - 2022-09-20
+- [Dear-1.0.10+21]
 
-Here we write upgrading notes for brands. It's a team effort to make them as
-straightforward as possible.
+### Changed
+
+- Adjust to publish
+
+### Fixed
+
+## [1.0.10+21] - 2022-09-24
+  
+Initial release
+
 
 ### Added
 
