@@ -6,5 +6,5 @@ class Route {
   final Function callback;
   bool security;
 
-  Route({required this.verb, required this.path, required this.callback, this.security: false});
+  Route({required this.verb, required this.path, required this.callback, this.security = false});
 }
