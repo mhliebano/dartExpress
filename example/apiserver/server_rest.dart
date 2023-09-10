@@ -17,7 +17,22 @@ void main(List<String> args) {
         callback: (IncomingRequest request) {
           request.response.statusCode = HttpStatus.ok;
           request.response.headers.contentType = ContentType.json;
-          request.response.write('{"status":200, "response":"Ok single api endpoint","data":"{}"}');
+          request.response.write(
+              '{"status":200, "response":"Ok single api endpoint","data":"{}"}');
+          request.response.close();
+        },
+      ),
+    );
+
+    server.route(
+      Route(
+        verb: routeVerb.GET,
+        path: '/api/test/single/',
+        callback: (IncomingRequest request) {
+          request.response.statusCode = HttpStatus.ok;
+          request.response.headers.contentType = ContentType.json;
+          request.response.write(
+              '{"status":200, "response":"Ok single api endpoint","data":"{}"}');
           request.response.close();
         },
       ),
@@ -32,7 +47,8 @@ void main(List<String> args) {
           String data = await dataBrute.readAsString();
           request.response.statusCode = HttpStatus.ok;
           request.response.headers.contentType = ContentType.json;
-          request.response.write('{"status":200, "response":"Data from Api","data":${data}}');
+          request.response.write(
+              '{"status":200, "response":"Data from Api","data":${data}}');
           request.response.close();
         },
       ),
@@ -52,10 +68,12 @@ void main(List<String> args) {
           request.response.headers.contentType = ContentType.json;
           if (lang.isNotEmpty) {
             request.response.statusCode = HttpStatus.ok;
-            request.response.write('{"status":200, "response":"Data from Api","data":${lang}}');
+            request.response.write(
+                '{"status":200, "response":"Data from Api","data":${lang}}');
           } else {
             request.response.statusCode = HttpStatus.notFound;
-            request.response.write('{"status":404, "response":"Data not found","data":{}}');
+            request.response
+                .write('{"status":404, "response":"Data not found","data":{}}');
           }
           request.response.close();
         },
@@ -69,10 +87,15 @@ void main(List<String> args) {
         callback: (IncomingRequest request) async {
           File dataBrute = File("./datos.json");
           final data = json.decode(await dataBrute.readAsString());
-          data.add({"name": request.body["name"], "skill": request.body["name"], "id": data.length + 1});
+          data.add({
+            "name": request.body["name"],
+            "skill": request.body["name"],
+            "id": data.length + 1
+          });
           final saveData = json.encode(data);
           dataBrute.writeAsString(saveData);
-          request.responseJSON({"code": 200, "message": "Actualizada la lista"}, HttpStatus.ok);
+          request.responseJSON(
+              {"code": 200, "message": "Actualizada la lista"}, HttpStatus.ok);
         },
       ),
     );
@@ -91,12 +114,20 @@ void main(List<String> args) {
           });
 
           if (langIndex != -1) {
-            data[langIndex] = {"name": dataBody["name"], "skill": dataBody["skill"], "id": data[langIndex]["id"]};
+            data[langIndex] = {
+              "name": dataBody["name"],
+              "skill": dataBody["skill"],
+              "id": data[langIndex]["id"]
+            };
             final saveData = json.encode(data);
             dataBrute.writeAsString(saveData);
-            request.responseJSON({"code": 200, "message": "Actualizado el registro"}, HttpStatus.ok);
+            request.responseJSON(
+                {"code": 200, "message": "Actualizado el registro"},
+                HttpStatus.ok);
           } else {
-            request.responseJSON({"code": 408, "message": "El Registro no existe"}, HttpStatus.badRequest);
+            request.responseJSON(
+                {"code": 408, "message": "El Registro no existe"},
+                HttpStatus.badRequest);
           }
         },
       ),
@@ -118,9 +149,13 @@ void main(List<String> args) {
             data.removeAt(langIndex);
             final saveData = json.encode(data);
             dataBrute.writeAsString(saveData);
-            request.responseJSON({"code": 200, "message": "Se ha eliminado el registro"}, HttpStatus.ok);
+            request.responseJSON(
+                {"code": 200, "message": "Se ha eliminado el registro"},
+                HttpStatus.ok);
           } else {
-            request.responseJSON({"code": 408, "message": "El Registro no existe"}, HttpStatus.badRequest);
+            request.responseJSON(
+                {"code": 408, "message": "El Registro no existe"},
+                HttpStatus.badRequest);
           }
         },
       ),
@@ -131,8 +166,10 @@ void main(List<String> args) {
         verb: routeVerb.POST,
         path: '/api/test/auth/',
         callback: (IncomingRequest request) async {
-          if (request.body["user"] == "admin" && request.body["pass"] == "admin") {
-            String token = request.newSecurityToken(payload: {"user": "admin", "id": 9999});
+          if (request.body["user"] == "admin" &&
+              request.body["pass"] == "admin") {
+            String token = request
+                .newSecurityToken(payload: {"user": "admin", "id": 9999});
             request.responseJSON({
               "code": 200,
               "message": "login success",
