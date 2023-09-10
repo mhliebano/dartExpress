@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:dear/src/enums.dart';
 
 class IncomingRequest {
@@ -47,7 +46,8 @@ class IncomingRequest {
 
   String? _secretPhrase;
 
-  IncomingRequest.fromHttpRequest({required HttpRequest req, String? securePhrase}) {
+  IncomingRequest.fromHttpRequest(
+      {required HttpRequest req, String? securePhrase}) {
     _response = req.response;
     _headers = req.headers;
     _connection = req.connectionInfo;
@@ -65,29 +65,37 @@ class IncomingRequest {
     _response.close();
   }
 
-  void responseFile(String file, headersFileType fileType, Map<String, dynamic> data) {
+  void responseFile(
+      String file, headersFileType fileType, Map<String, dynamic> data) {
     //print("en el sendifle ${_uri.path}");
     switch (fileType) {
       case headersFileType.HTML:
-        _response.headers.set(HttpHeaders.contentTypeHeader, "text/html; charset=utf-8");
+        _response.headers
+            .set(HttpHeaders.contentTypeHeader, "text/html; charset=utf-8");
         break;
       case headersFileType.IMAGE_PNG:
-        _response.headers.set(HttpHeaders.contentTypeHeader, "image/png; charset=utf-8");
+        _response.headers
+            .set(HttpHeaders.contentTypeHeader, "image/png; charset=utf-8");
         break;
       case headersFileType.IMAGE_JPG:
-        _response.headers.set(HttpHeaders.contentTypeHeader, "image/jpg; charset=utf-8");
+        _response.headers
+            .set(HttpHeaders.contentTypeHeader, "image/jpg; charset=utf-8");
         break;
       case headersFileType.IMAGE_GIF:
-        _response.headers.set(HttpHeaders.contentTypeHeader, "image/gif; charset=utf-8");
+        _response.headers
+            .set(HttpHeaders.contentTypeHeader, "image/gif; charset=utf-8");
         break;
       case headersFileType.IMAGE_SVG:
-        _response.headers.set(HttpHeaders.contentTypeHeader, "image/svg+xml; charset=utf-8");
+        _response.headers
+            .set(HttpHeaders.contentTypeHeader, "image/svg+xml; charset=utf-8");
         break;
       case headersFileType.JS:
-        _response.headers.set(HttpHeaders.contentTypeHeader, "text/javascript; charset=utf-8");
+        _response.headers.set(
+            HttpHeaders.contentTypeHeader, "text/javascript; charset=utf-8");
         break;
       case headersFileType.CSS:
-        _response.headers.set(HttpHeaders.contentTypeHeader, "text/css; charset=utf-8");
+        _response.headers
+            .set(HttpHeaders.contentTypeHeader, "text/css; charset=utf-8");
         break;
     }
 
@@ -96,7 +104,11 @@ class IncomingRequest {
     final sfile = File("./www${file}");
     if (sfile.existsSync()) {
       _response.statusCode = HttpStatus.ok;
-      sfile.openRead().pipe(_response).catchError((e) {}).whenComplete(() => _response.close());
+      sfile
+          .openRead()
+          .pipe(_response)
+          .catchError((e) {})
+          .whenComplete(() => _response.close());
     } else {
       _response.statusCode = HttpStatus.notFound;
       _response.write(
@@ -109,21 +121,25 @@ class IncomingRequest {
     final Base64Encoder base64Encoder = base64.encoder;
 
     String header = 'DTS.${DateTime.now().millisecondsSinceEpoch}';
-    String encodedHeader = base64Encoder.convert(header.codeUnits).replaceAll("=", '');
+    String encodedHeader =
+        base64Encoder.convert(header.codeUnits).replaceAll("=", '');
     Map<String, dynamic> pay;
     if (payload == null) {
       pay = {"payload": "no data"};
     } else {
       pay = payload;
     }
-    final String encodedpayload = base64Encoder.convert(json.encode(pay).codeUnits).replaceAll("=", '');
+    final String encodedpayload =
+        base64Encoder.convert(json.encode(pay).codeUnits).replaceAll("=", '');
     String secret = _secretPhrase!;
-    String encodedFrase = base64Encoder.convert(secret.codeUnits).replaceAll("=", '');
+    String encodedFrase =
+        base64Encoder.convert(secret.codeUnits).replaceAll("=", '');
     return "${encodedHeader}.${encodedpayload}.${encodedFrase}";
   }
 
   void renderFile(String file, Map<String, dynamic> data) async {
-    _response.headers.set(HttpHeaders.contentTypeHeader, "text/html; charset=utf-8");
+    _response.headers
+        .set(HttpHeaders.contentTypeHeader, "text/html; charset=utf-8");
     _response.statusCode = HttpStatus.ok;
 
     final sfile = File("./www${file}");
