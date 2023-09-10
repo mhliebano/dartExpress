@@ -280,7 +280,7 @@ abstract class RoutesList {
         if (_get.firstWhere(
               (element) => RegExp(element!.regex).hasMatch(path),
               orElse: () => null,
-            ) ==
+            ) !=
             null) {
           result = true;
         }
@@ -289,7 +289,7 @@ abstract class RoutesList {
         if (_post.firstWhere(
               (element) => RegExp(element!.regex).hasMatch(path),
               orElse: () => null,
-            ) ==
+            ) !=
             null) {
           result = true;
         }
@@ -298,7 +298,7 @@ abstract class RoutesList {
         if (_put.firstWhere(
               (element) => RegExp(element!.regex).hasMatch(path),
               orElse: () => null,
-            ) ==
+            ) !=
             null) {
           result = true;
         }
@@ -307,7 +307,7 @@ abstract class RoutesList {
         if (_delete.firstWhere(
               (element) => RegExp(element!.regex).hasMatch(path),
               orElse: () => null,
-            ) ==
+            ) !=
             null) {
           result = true;
         }
@@ -316,7 +316,7 @@ abstract class RoutesList {
         if (_patch.firstWhere(
               (element) => RegExp(element!.regex).hasMatch(path),
               orElse: () => null,
-            ) ==
+            ) !=
             null) {
           result = true;
         }
