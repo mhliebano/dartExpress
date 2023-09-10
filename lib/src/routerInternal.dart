@@ -20,11 +20,11 @@ class RouteInternal extends Route {
 }
 
 abstract class RoutesList {
-  static List<RouteInternal> _get = [];
-  static List<RouteInternal> _post = [];
-  static List<RouteInternal> _put = [];
-  static List<RouteInternal> _delete = [];
-  static List<RouteInternal> _patch = [];
+  static List<RouteInternal?> _get = [];
+  static List<RouteInternal?> _post = [];
+  static List<RouteInternal?> _put = [];
+  static List<RouteInternal?> _delete = [];
+  static List<RouteInternal?> _patch = [];
 
   static void registerRoute(Route route) {
     try {
@@ -36,6 +36,10 @@ abstract class RoutesList {
           useSecurity: route.security,
           regex: reg["regex"],
           paramSegment: reg["param"]);
+      if (_isPathRegistred(
+          path: routeInternal.path, method: routeInternal.verb)) {
+        throw ({"code": "005", "description": "route already declred"});
+      }
       switch (route.verb) {
         case routeVerb.GET:
           _get.add(routeInternal);
@@ -71,7 +75,9 @@ abstract class RoutesList {
       throw ({"code": "002", "description": "routes end with /"});
     }
 
-    RegExpMatch? file = RegExp(r'(\:\*/)|(\:\w+/)', dotAll: false, multiLine: false).firstMatch(path);
+    RegExpMatch? file =
+        RegExp(r'(\:\*/)|(\:\w+/)', dotAll: false, multiLine: false)
+            .firstMatch(path);
     if (file != null) {
       isComodite = true;
     }
@@ -94,11 +100,18 @@ abstract class RoutesList {
     });
     //(\:\*/)
 
-    parameterPath.isNotEmpty ? regexp += '(\\w+\/){${parameterPath.length}}\$' : regexp += "\$";
-    return {"regex": regexp, "param": parameterPath, "base": isComodite ? path.substring(0, file!.start) : path};
+    parameterPath.isNotEmpty
+        ? regexp += '(\\w+\/){${parameterPath.length}}\$'
+        : regexp += "\$";
+    return {
+      "regex": regexp,
+      "param": parameterPath,
+      "base": isComodite ? path.substring(0, file!.start) : path
+    };
   }
 
-  static Future<RouteInternal> isRouterRegister(String method, String path, bool isStatic) async {
+  static Future<RouteInternal> isRouterRegister(
+      String method, String path, bool isStatic) async {
     late RouteInternal? routeInternal;
     try {
       bool findStatic = false;
@@ -128,7 +141,12 @@ abstract class RoutesList {
           if (findStatic) {
             File a = File("./www$path");
             routeInternal = RouteInternal(
-                verb: routeVerb.GET, path: path, callback: () {}, regex: "", paramSegment: [], useSecurity: false);
+                verb: routeVerb.GET,
+                path: path,
+                callback: () {},
+                regex: "",
+                paramSegment: [],
+                useSecurity: false);
             routeInternal.isStatic = true;
 
             if (a.existsSync()) {
@@ -139,9 +157,9 @@ abstract class RoutesList {
             }
           } else {
             routeInternal = _get.singleWhere((element) {
-              return RegExp(element.regex).hasMatch(path);
+              return RegExp(element!.regex).hasMatch(path);
             });
-            routeInternal.isStatic = false;
+            routeInternal!.isStatic = false;
             routeInternal.is404 = false;
           }
           break;
@@ -149,7 +167,12 @@ abstract class RoutesList {
           if (findStatic) {
             File a = File("./www$path");
             routeInternal = RouteInternal(
-                verb: routeVerb.GET, path: path, callback: () {}, regex: "", paramSegment: [], useSecurity: false);
+                verb: routeVerb.GET,
+                path: path,
+                callback: () {},
+                regex: "",
+                paramSegment: [],
+                useSecurity: false);
             routeInternal.isStatic = true;
             if (a.existsSync()) {
               routeInternal.is404 = false;
@@ -158,24 +181,28 @@ abstract class RoutesList {
               routeInternal.is404 = true;
             }
           } else {
-            routeInternal = _post.singleWhere((element) => RegExp(element.regex).hasMatch(path));
-            routeInternal.isStatic = false;
+            routeInternal = _post.singleWhere(
+                (element) => RegExp(element!.regex).hasMatch(path));
+            routeInternal!.isStatic = false;
             routeInternal.is404 = false;
           }
           break;
         case "PUT":
-          routeInternal = _put.singleWhere((element) => RegExp(element.regex).hasMatch(path));
-          routeInternal.isStatic = false;
+          routeInternal = _put
+              .singleWhere((element) => RegExp(element!.regex).hasMatch(path));
+          routeInternal!.isStatic = false;
           routeInternal.is404 = false;
           break;
         case "DELETE":
-          routeInternal = _delete.singleWhere((element) => RegExp(element.regex).hasMatch(path));
-          routeInternal.isStatic = false;
+          routeInternal = _delete
+              .singleWhere((element) => RegExp(element!.regex).hasMatch(path));
+          routeInternal!.isStatic = false;
           routeInternal.is404 = false;
           break;
         case "PATCH":
-          routeInternal = _patch.singleWhere((element) => RegExp(element.regex).hasMatch(path));
-          routeInternal.isStatic = false;
+          routeInternal = _patch
+              .singleWhere((element) => RegExp(element!.regex).hasMatch(path));
+          routeInternal!.isStatic = false;
           routeInternal.is404 = false;
           break;
       }
@@ -184,7 +211,9 @@ abstract class RoutesList {
         List<dynamic> valuesPath = path.split("/");
         valuesPath.removeLast();
         valuesPath.removeAt(0);
-        List<dynamic> values = valuesPath.getRange(valuesPath.length - lengthParam, valuesPath.length).toList();
+        List<dynamic> values = valuesPath
+            .getRange(valuesPath.length - lengthParam, valuesPath.length)
+            .toList();
         Map<String, dynamic> tmp = {};
         for (int i = 0; i < lengthParam; i++) {
           tmp[routeInternal.paramSegment[i]] = values[i];
@@ -196,7 +225,12 @@ abstract class RoutesList {
       return routeInternal;
     } catch (e) {
       routeInternal = RouteInternal(
-          verb: routeVerb.GET, path: path, callback: () {}, regex: "", paramSegment: [], useSecurity: false);
+          verb: routeVerb.GET,
+          path: path,
+          callback: () {},
+          regex: "",
+          paramSegment: [],
+          useSecurity: false);
       routeInternal.isStatic = false;
       routeInternal.is404 = true;
       return routeInternal;
@@ -236,5 +270,58 @@ abstract class RoutesList {
         break;
     }
     return t;
+  }
+
+  static bool _isPathRegistred(
+      {required String path, required routeVerb method}) {
+    bool result = false;
+    switch (method) {
+      case routeVerb.GET:
+        if (_get.firstWhere(
+              (element) => RegExp(element!.regex).hasMatch(path),
+              orElse: () => null,
+            ) ==
+            null) {
+          result = true;
+        }
+        break;
+      case routeVerb.POST:
+        if (_post.firstWhere(
+              (element) => RegExp(element!.regex).hasMatch(path),
+              orElse: () => null,
+            ) ==
+            null) {
+          result = true;
+        }
+        break;
+      case routeVerb.PUT:
+        if (_put.firstWhere(
+              (element) => RegExp(element!.regex).hasMatch(path),
+              orElse: () => null,
+            ) ==
+            null) {
+          result = true;
+        }
+        break;
+      case routeVerb.DELETE:
+        if (_delete.firstWhere(
+              (element) => RegExp(element!.regex).hasMatch(path),
+              orElse: () => null,
+            ) ==
+            null) {
+          result = true;
+        }
+        break;
+      case routeVerb.PATCH:
+        if (_patch.firstWhere(
+              (element) => RegExp(element!.regex).hasMatch(path),
+              orElse: () => null,
+            ) ==
+            null) {
+          result = true;
+        }
+        break;
+    }
+    return result;
   }
 }
