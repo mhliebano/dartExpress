@@ -27,12 +27,12 @@ void main(List<String> args) {
     server.route(
       Route(
         verb: routeVerb.GET,
-        path: '/api/test/single/',
+        path: '/api/test/single/:id/',
         callback: (IncomingRequest request) {
           request.response.statusCode = HttpStatus.ok;
           request.response.headers.contentType = ContentType.json;
           request.response.write(
-              '{"status":200, "response":"Ok single api endpoint","data":"{}"}');
+              '{"status":200, "response":"Ok single api endpoint with patameter","data":"${request.segmentsData["id"]}"}');
           request.response.close();
         },
       ),
@@ -89,7 +89,7 @@ void main(List<String> args) {
           final data = json.decode(await dataBrute.readAsString());
           data.add({
             "name": request.body["name"],
-            "skill": request.body["name"],
+            "skill": request.body["skill"],
             "id": data.length + 1
           });
           final saveData = json.encode(data);
@@ -203,6 +203,6 @@ void main(List<String> args) {
 
     server.run();
   } catch (e) {
-    print(e);
+    print("=> Fail $e");
   }
 }

@@ -39,10 +39,14 @@ class Dear {
         SecurityContext context = SecurityContext()
           ..useCertificateChain(_configHttps!.chain)
           ..usePrivateKey(_configHttps!.key, password: _configHttps!.password);
-        server =
-            await HttpServer.bindSecure(_conf!.ip == "*" ? InternetAddress.anyIPv4 : _conf!.ip, _conf!.port, context);
+        server = await HttpServer.bindSecure(
+            _conf!.ip == "*" ? InternetAddress.anyIPv4 : _conf!.ip,
+            _conf!.port,
+            context);
       } else {
-        server = await HttpServer.bind(_conf!.ip == "*" ? InternetAddress.anyIPv4 : _conf!.ip, _conf!.port);
+        server = await HttpServer.bind(
+            _conf!.ip == "*" ? InternetAddress.anyIPv4 : _conf!.ip,
+            _conf!.port);
       }
       server.listen((request) async {
         if (_useCors) {
@@ -52,8 +56,10 @@ class Dear {
           }
           request.response.headers.set("Access-Control-Allow-Origin", "*");
         }
-        RouteInternal? handleroute = await _getRoute(request.method, request.uri);
-        IncomingRequest reqs = IncomingRequest.fromHttpRequest(req: request, securePhrase: _securityPhrase);
+        RouteInternal? handleroute =
+            await _getRoute(request.method, request.uri);
+        IncomingRequest reqs = IncomingRequest.fromHttpRequest(
+            req: request, securePhrase: _securityPhrase);
         if (handleroute.isStatic) {
           if (handleroute.is404) {
             request.response.headers.contentType = ContentType.html;
@@ -64,15 +70,22 @@ class Dear {
           } else {
             if (request.contentLength > 0) {
               await request.listen((e) async {
-                await _parseBody(e: e, contentType: request.headers.contentType!).then((value) {
+                await _parseBody(
+                        e: e, contentType: request.headers.contentType!)
+                    .then((value) {
                   reqs.body = value;
                 });
               }, onDone: () => print("ok")).asFuture();
             }
-            request.response.headers.set(HttpHeaders.contentTypeHeader, handleroute.regex);
+            request.response.headers
+                .set(HttpHeaders.contentTypeHeader, handleroute.regex);
             request.response.statusCode = HttpStatus.ok;
             File file = File("./www${handleroute.path}");
-            file.openRead().pipe(reqs.response).catchError((e) {}).whenComplete(() => reqs.response.close());
+            file
+                .openRead()
+                .pipe(reqs.response)
+                .catchError((e) {})
+                .whenComplete(() => reqs.response.close());
           }
         } else {
           if (handleroute.is404) {
@@ -83,7 +96,9 @@ class Dear {
           } else {
             if (request.contentLength > 0) {
               await request.listen((e) async {
-                await _parseBody(e: e, contentType: request.headers.contentType!).then((value) {
+                await _parseBody(
+                        e: e, contentType: request.headers.contentType!)
+                    .then((value) {
                   reqs.body = value;
                 });
               }, onDone: () => print("ok")).asFuture();
@@ -92,7 +107,9 @@ class Dear {
               reqs.segmentsData = handleroute.segmentsData;
             }
             if (handleroute.useSecurity && _useSecurity) {
-              String? auth = request.headers["authorization"] == null ? null : request.headers["authorization"]!.first;
+              String? auth = request.headers["authorization"] == null
+                  ? null
+                  : request.headers["authorization"]!.first;
               Map<String, dynamic> checkStatus = _checkToken(auth);
               reqs.payload = checkStatus["payload"];
               reqs.securityStatus = checkStatus["tokenStatus"];
@@ -100,13 +117,17 @@ class Dear {
               if (checkStatus["tokenStatus"] != securityTokenStatus.STATUS_OK) {
                 request.response.headers.contentType = ContentType.json;
                 request.response.statusCode = HttpStatus.forbidden;
-                request.response.write('{"status":403, "response":${checkStatus["tokenStatus"]}}');
+                request.response.write(
+                    '{"status":403, "response":${checkStatus["tokenStatus"]}}');
                 request.response.close();
                 return;
               }
             }
             handleroute.callback(reqs);
           }
+        }
+        if (_conf!.useDebug) {
+          print("[${request.method}] => ${request.uri}");
         }
       }, onDone: () {
         print("Listo cerrando el stream");
@@ -117,11 +138,12 @@ class Dear {
   }
 
   void route(Route route) {
-    try {
-      RoutesList.registerRoute(route);
-    } catch (e) {
-      print(e);
-      throw (e);
+    if (_conf!.useDebug) {
+      print("+ Check ${route.path} => ${route.verb}");
+    }
+    RoutesList.registerRoute(route);
+    if (_conf!.useDebug) {
+      print("=> [pass]");
     }
   }
 
@@ -137,13 +159,14 @@ class Dear {
   }
 
   void useSecurity(bool use, {String? secretFrase}) {
-    const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+    const _chars =
+        'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
     Random _rnd = Random();
 
     _useSecurity = use;
     if (secretFrase == null) {
-      _securityPhrase =
-          String.fromCharCodes(Iterable.generate(15, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+      _securityPhrase = String.fromCharCodes(Iterable.generate(
+          15, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
     } else {
       _securityPhrase = secretFrase;
     }
@@ -160,7 +183,8 @@ class Dear {
     return RoutesList.isRouterRegister(method, uri.path, _useStatic);
   }
 
-  Future<Map<String, dynamic>> _parseBody({required Uint8List e, required ContentType contentType}) async {
+  Future<Map<String, dynamic>> _parseBody(
+      {required Uint8List e, required ContentType contentType}) async {
     Map<String, dynamic> body = {};
     switch (contentType.mimeType) {
       case "application/x-www-form-urlencoded":
@@ -177,7 +201,10 @@ class Dear {
       case "multipart/form-data":
         String? boundary = contentType.parameters["boundary"];
         String rq = String.fromCharCodes(e);
-        List<RegExpMatch> fields = RegExp("(--$boundary)", dotAll: true, multiLine: true).allMatches(rq).toList();
+        List<RegExpMatch> fields =
+            RegExp("(--$boundary)", dotAll: true, multiLine: true)
+                .allMatches(rq)
+                .toList();
         for (var i = 0; i < fields.length - 1; i++) {
           int star = 0;
           int end = 0;
@@ -189,22 +216,29 @@ class Dear {
             end = fields[i + 1].start - 1;
           }
           String x = rq.substring(star, end).trim();
-          RegExpMatch? dis =
-              RegExp("^Content-Disposition: form-data.+?\n", dotAll: true, multiLine: true).firstMatch(x);
+          RegExpMatch? dis = RegExp("^Content-Disposition: form-data.+?\n",
+                  dotAll: true, multiLine: true)
+              .firstMatch(x);
           if (dis != null) {
             String disposition = x.substring(dis.start, dis.end).trim();
-            RegExpMatch? field = RegExp(r'name="(\w.+?)"', dotAll: false, multiLine: false).firstMatch(disposition);
+            RegExpMatch? field =
+                RegExp(r'name="(\w.+?)"', dotAll: false, multiLine: false)
+                    .firstMatch(disposition);
             String fieldName = field!.group(1)!;
 
             if (disposition.contains("filename")) {
               RegExpMatch? fileName =
-                  RegExp(r'filename="(\w.+?)"', dotAll: false, multiLine: false).firstMatch(disposition);
-              RegExpMatch? detailsfile = RegExp(r"^(?:Content-Type:)(.+)", multiLine: true).firstMatch(x);
+                  RegExp(r'filename="(\w.+?)"', dotAll: false, multiLine: false)
+                      .firstMatch(disposition);
+              RegExpMatch? detailsfile =
+                  RegExp(r"^(?:Content-Type:)(.+)", multiLine: true)
+                      .firstMatch(x);
               String? typefile = detailsfile?.group(0);
               int len = x.substring(detailsfile!.end + 4, x.length).length;
               String tmpname = "tmp${DateTime.now().millisecondsSinceEpoch}";
               File tmp = File("./tmp/files/${tmpname}");
-              tmp.writeAsBytes(x.substring(detailsfile.end + 4, x.length).codeUnits);
+              tmp.writeAsBytes(
+                  x.substring(detailsfile.end + 4, x.length).codeUnits);
               body[fieldName] = FileDetails(
                   fieldName: fieldName,
                   fileName: fileName!.group(1)!,
@@ -239,24 +273,29 @@ class Dear {
             int dif = 0;
             if (encodedHeader.length % 4 != 0) {
               dif = 4 - (encodedHeader.length % 4);
-              encodedHeader = encodedHeader.padRight(encodedHeader.length + dif, "=");
+              encodedHeader =
+                  encodedHeader.padRight(encodedHeader.length + dif, "=");
             }
             if (encodedFrase.length % 4 != 0) {
               dif = 4 - (encodedFrase.length % 4);
-              encodedFrase = encodedFrase.padRight(encodedFrase.length + dif, "=");
+              encodedFrase =
+                  encodedFrase.padRight(encodedFrase.length + dif, "=");
             }
             if (encodedPayload.length % 4 != 0) {
               dif = 4 - (encodedPayload.length % 4);
-              encodedPayload = encodedPayload.padRight(encodedPayload.length + dif, "=");
+              encodedPayload =
+                  encodedPayload.padRight(encodedPayload.length + dif, "=");
             }
             String header = utf8.decode(base64decoder.convert(encodedHeader));
             String secret = utf8.decode(base64decoder.convert(encodedFrase));
-            payload = json.decode(utf8.decode(base64decoder.convert(encodedPayload)));
+            payload =
+                json.decode(utf8.decode(base64decoder.convert(encodedPayload)));
             if (header.split(".")[0] != "DTS") {
               st = securityTokenStatus.TOKEN_NOT_VALID;
             } else {
               int diference = DateTime.now()
-                  .difference(DateTime.fromMillisecondsSinceEpoch(int.parse(header.split(".")[1])))
+                  .difference(DateTime.fromMillisecondsSinceEpoch(
+                      int.parse(header.split(".")[1])))
                   .inMinutes;
               if (diference > _securityTokenDuration!.inMinutes) {
                 st = securityTokenStatus.TOKEN_EXPIRED;

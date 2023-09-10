@@ -1,8 +1,8 @@
 class ConfigServer {
   String ip;
   int port;
-
-  ConfigServer({this.ip = "127.0.0.1", this.port = 9090});
+  bool useDebug;
+  ConfigServer({this.ip = "127.0.0.1", this.port = 9090, this.useDebug = true});
 }
 
 class ConfigHttps {

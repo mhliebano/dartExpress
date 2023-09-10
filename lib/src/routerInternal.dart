@@ -27,39 +27,32 @@ abstract class RoutesList {
   static List<RouteInternal?> _patch = [];
 
   static void registerRoute(Route route) {
-    try {
-      Map<String, dynamic> reg = _validRoute(route.path);
-      RouteInternal routeInternal = RouteInternal(
-          verb: route.verb,
-          path: route.path,
-          callback: route.callback,
-          useSecurity: route.security,
-          regex: reg["regex"],
-          paramSegment: reg["param"]);
-      if (_isPathRegistred(
-          path: routeInternal.path, method: routeInternal.verb)) {
-        throw ({"code": "005", "description": "route already declred"});
-      }
-      switch (route.verb) {
-        case routeVerb.GET:
-          _get.add(routeInternal);
-          break;
-        case routeVerb.POST:
-          _post.add(routeInternal);
-          break;
-        case routeVerb.PUT:
-          _put.add(routeInternal);
-          break;
-        case routeVerb.DELETE:
-          _delete.add(routeInternal);
-          break;
-        case routeVerb.PATCH:
-          _patch.add(routeInternal);
-          break;
-      }
-    } catch (e) {
-      print(e);
-      throw (e);
+    Map<String, dynamic> reg = _validRoute(route.path);
+    RouteInternal routeInternal = RouteInternal(
+        verb: route.verb,
+        path: route.path,
+        callback: route.callback,
+        useSecurity: route.security,
+        regex: reg["regex"],
+        paramSegment: reg["param"]);
+    _isPathRegistred(path: routeInternal.path, method: routeInternal.verb);
+
+    switch (route.verb) {
+      case routeVerb.GET:
+        _get.add(routeInternal);
+        break;
+      case routeVerb.POST:
+        _post.add(routeInternal);
+        break;
+      case routeVerb.PUT:
+        _put.add(routeInternal);
+        break;
+      case routeVerb.DELETE:
+        _delete.add(routeInternal);
+        break;
+      case routeVerb.PATCH:
+        _patch.add(routeInternal);
+        break;
     }
   }
 
@@ -69,10 +62,14 @@ abstract class RoutesList {
     bool variableseccion = false;
     bool isComodite = false;
     if (!path.startsWith("/")) {
-      throw ({"code": "001", "description": "routes start with /"});
+      throw ({
+        "code": "001",
+        "description": "routes start with /",
+        "path": path
+      });
     }
     if (!path.endsWith("/")) {
-      throw ({"code": "002", "description": "routes end with /"});
+      throw ({"code": "002", "description": "routes end with /", "path": path});
     }
 
     RegExpMatch? file =
@@ -90,7 +87,11 @@ abstract class RoutesList {
         variableseccion = true;
       }
       if (!isvar && variableseccion) {
-        throw ({"code": "003", "description": "routes bad config"});
+        throw ({
+          "code": "003",
+          "description": "routes bad config",
+          "path": path
+        });
       }
       if (!isvar) {
         regexp += "$element\/";
@@ -272,8 +273,7 @@ abstract class RoutesList {
     return t;
   }
 
-  static bool _isPathRegistred(
-      {required String path, required routeVerb method}) {
+  static _isPathRegistred({required String path, required routeVerb method}) {
     bool result = false;
     switch (method) {
       case routeVerb.GET:
@@ -322,6 +322,12 @@ abstract class RoutesList {
         }
         break;
     }
-    return result;
+    if (result) {
+      throw ({
+        "code": "005",
+        "description": "route already declared",
+        "path": path
+      });
+    }
   }
 }
