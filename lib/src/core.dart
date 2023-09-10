@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:cli';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:dear/src/config.dart';
@@ -55,6 +57,16 @@ class Dear {
             return;
           }
           request.response.headers.set("Access-Control-Allow-Origin", "*");
+        }
+        print(request.uri.path);
+        if (request.uri.path.startsWith("/dear-")) {
+          if (request.uri.path.endsWith("/")) {
+            _renderAdminPanel(request, "html");
+          } else if (request.uri.path.endsWith("min.css")) {
+            _renderAdminPanel(request, 'css');
+          }
+
+          return;
         }
         RouteInternal? handleroute =
             await _getRoute(request.method, request.uri);
@@ -318,5 +330,52 @@ class Dear {
       st = securityTokenStatus.TOKEN_NOT_VALID;
     }
     return {"tokenStatus": st, "payload": payload};
+  }
+
+  void _renderAdminPanel(HttpRequest req, String file) async {
+    String page = "";
+    if (file == "html") {
+      final packageUri = Uri.parse('package:dear/src/admin/index.html');
+      final index = await Isolate.resolvePackageUri(packageUri);
+      final sfile = File(index!.path);
+      page = await sfile.readAsString();
+      Iterable<Match> matches =
+          RegExp(r'({{for +.*{{for-end}})', dotAll: true, multiLine: false)
+              .allMatches(page);
+      String template = "";
+      Map<String, int> range = {"start": 0, "end": 0};
+      for (final Match m in matches) {
+        String match = m[0]!;
+        range["start"] = m.start;
+        range["end"] = m.end;
+        template = match.substring(14, match.length - 11);
+      }
+      String endpoints = "";
+      RoutesList.getAllRoutes().forEach((List<RouteInternal?> rt) {
+        rt.forEach((element) {
+          String tmp = template;
+          tmp = tmp.replaceAll(
+              '{{method}}', element!.verb.toString().split(".")[1]);
+          tmp = tmp.replaceAll('{{path}}', element.path);
+          endpoints += tmp;
+        });
+      });
+
+      page = page.replaceRange(range["start"]!, range["end"], endpoints);
+
+      req.response.headers
+          .set(HttpHeaders.contentTypeHeader, "text/html; charset=utf-8");
+    } else if (file == "css") {
+      final packageUri = Uri.parse('package:dear/src/admin/bulma.min.css');
+      final index = await Isolate.resolvePackageUri(packageUri);
+      final sfile = File(index!.path);
+      page = await sfile.readAsString();
+      req.response.headers
+          .set(HttpHeaders.contentTypeHeader, "text/css; charset=utf-8");
+    }
+
+    req.response.statusCode = HttpStatus.ok;
+    req.response.write(page);
+    req.response.close();
   }
 }

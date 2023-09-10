@@ -330,4 +330,13 @@ abstract class RoutesList {
       });
     }
   }
+
+  static List<List<RouteInternal?>> getAllRoutes() {
+    List<List<RouteInternal?>> list = [];
+    list.add(_get);
+    list.add(_delete);
+    list.add(_post);
+    list.add(_put);
+    return list;
+  }
 }
