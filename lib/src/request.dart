@@ -42,7 +42,7 @@ class IncomingRequest {
   HttpHeaders? get headers => _headers;
   HttpConnectionInfo? get connectionInfo => _connection;
 
-  late Uri _uri;
+  Uri? _uri;
 
   String? _secretPhrase;
 
@@ -53,7 +53,7 @@ class IncomingRequest {
     _connection = req.connectionInfo;
     _uri = req.uri;
     _secretPhrase = securePhrase;
-    if (req.uri.hasQuery) {
+    if (_uri!.hasQuery) {
       _queryParams = req.uri.queryParameters;
     }
   }

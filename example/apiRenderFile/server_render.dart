@@ -5,7 +5,12 @@ void main(List<String> args) {
     ConfigServer config = ConfigServer();
     Dear server = Dear(conf: config);
     server.useCors(true);
-    server.useSecurity(true, secretFrase: "MyT0k3n!Secret");
+    server.useSecurity(
+      true,
+      security_conf: ConfigSecurity(
+          securityPhrase: "MyT0k3n!Secret",
+          securityTokenDuration: Duration(minutes: 1)),
+    );
 
     //server.useHTTPS(true, config: ConfigHttps(chain: "chain", key: "key"));
     server.route(
@@ -22,8 +27,12 @@ void main(List<String> args) {
           } else {
             action = "1";
           }
-          request
-              .renderFile("/test.html", {"name": "Miguel", "company": "MMSytems", "message": alert, "action": action});
+          request.renderFile("/test.html", {
+            "name": "Miguel",
+            "company": "MMSytems",
+            "message": alert,
+            "action": action
+          });
         },
       ),
     );

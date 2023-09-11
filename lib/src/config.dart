@@ -13,4 +13,13 @@ class ConfigHttps {
   ConfigHttps({required this.chain, required this.key, this.password = ""});
 }
 
+class ConfigSecurity {
+  Duration securityTokenDuration;
+  String securityPhrase;
+
+  ConfigSecurity(
+      {this.securityTokenDuration = const Duration(minutes: 10),
+      this.securityPhrase = ""});
+}
+
 class ConfigCORS {}

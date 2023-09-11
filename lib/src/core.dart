@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:cli';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
@@ -16,7 +15,7 @@ import 'filedetails.dart';
 
 class Dear {
   String _securityPhrase = "";
-  Duration? _securityTokenDuration = Duration(minutes: 10);
+  Duration? _securityTokenDuration;
 
   ConfigServer? _conf;
   Cors? _cors;
@@ -170,17 +169,20 @@ class Dear {
     _useStatic = use;
   }
 
-  void useSecurity(bool use, {String? secretFrase}) {
+  void useSecurity(bool use, {ConfigSecurity? security_conf}) {
     const _chars =
         'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
     Random _rnd = Random();
 
     _useSecurity = use;
-    if (secretFrase == null) {
-      _securityPhrase = String.fromCharCodes(Iterable.generate(
-          15, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
-    } else {
-      _securityPhrase = secretFrase;
+    if (_useSecurity) {
+      _securityTokenDuration = security_conf!.securityTokenDuration;
+      if (security_conf.securityPhrase == "") {
+        _securityPhrase = String.fromCharCodes(Iterable.generate(
+            15, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+      } else {
+        _securityPhrase = security_conf.securityPhrase;
+      }
     }
   }
 
