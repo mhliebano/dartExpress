@@ -3,7 +3,7 @@
 
 ### Added
 
-- [Dear-1.0.10+22]
+- [Dear-1.0.11]
 
 ### Changed
 - fixed bug duplicate paths
