@@ -1,6 +1,14 @@
 
 # Change Log
 
+### Added
+
+- [Dear-1.0.10+22]
+
+### Changed
+- fixed bug duplicate paths
+
+- minor changes
 
 ### Added
 
